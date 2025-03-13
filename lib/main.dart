@@ -10,15 +10,15 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  @override
+  /*@override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'App de Préstamo de Equipos',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ProfileScreen(),
+      home: const ProfileScreen(),*/
 
-  /*@override
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const SplashScreen(), // Pantalla de carga inicial*/
+      home: const SplashScreen(), // Pantalla de carga inicial
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:app_comu/screens/usuarios_con_equipos_screen.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -78,6 +79,10 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 20),
             GestureDetector(
               onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => UsuariosConEquiposScreen()),
+                );
                 // Aquí puedes agregar la navegación a la pantalla de "Gestor de Equipos"
               },
               child: const Text(
