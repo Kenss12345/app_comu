@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1097476358152",
+    "project_id": "appcomu-8fbc4",
+    "storage_bucket": "appcomu-8fbc4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097476358152:android:379bf2f25fb62aac5f51bd",
+        "android_client_info": {
+          "package_name": "com.example.app_comu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjQRxHcBfwPqykcMrkPHRM0UleW_jV6ys"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
