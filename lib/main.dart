@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,11 +14,19 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'App de Préstamo de Equipos',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const ProfileScreen(),
+
+  /*@override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Préstamo de Equipos',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const SplashScreen(), // Pantalla de carga inicial
+      home: const SplashScreen(), // Pantalla de carga inicial*/
     );
   }
 }
