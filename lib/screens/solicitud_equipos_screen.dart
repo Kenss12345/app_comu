@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SolicitudEquiposScreen extends StatefulWidget {
   const SolicitudEquiposScreen({super.key});
@@ -10,9 +12,13 @@ class SolicitudEquiposScreen extends StatefulWidget {
 class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Simulación de datos prellenados del usuario
-  final String nombreUsuario = "Juan Pérez";
-  final String codigoEstudiante = "UC2025001";
+  // Datos del usuario
+  String nombreUsuario = "";
+  String dniUsuario = "";
+  String tipoUsuario = "";
+  String celularUsuario = "";
+  String emailUsuario = "";
+  bool isLoading = true;
 
   // Controladores para los campos editables
   final TextEditingController asignaturaController = TextEditingController();
@@ -24,65 +30,90 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   final TextEditingController horaSalidaController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _cargarDatosUsuario();
+  }
+
+  Future<void> _cargarDatosUsuario() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          nombreUsuario = userDoc["nombre"] ?? "";
+          celularUsuario = userDoc["celular"] ?? "";
+          emailUsuario = userDoc["email"] ?? "";
+          dniUsuario = userDoc["dni"] ?? "";
+          tipoUsuario = userDoc["TipoUser"] ?? "";
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Solicitud de Equipo"),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.orange,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Datos del Estudiante",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildTextField(label: "Nombre", initialValue: nombreUsuario, enabled: false),
-                _buildTextField(label: "Código de Estudiante", initialValue: codigoEstudiante, enabled: false),
-
-                const SizedBox(height: 16),
-                const Text(
-                  "Detalles de la Solicitud",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-
-                _buildTextField(label: "Asignatura", controller: asignaturaController),
-                _buildTextField(label: "Trabajo a Realizar", controller: trabajoController),
-                _buildTextField(label: "Docente a Cargo", controller: docenteController),
-                _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
-                _buildTextField(label: "Fecha de Entrega", controller: fechaEntregaController),
-                _buildTextField(label: "Fecha de Devolución", controller: fechaDevolucionController),
-                _buildTextField(label: "Hora de Salida del Equipo", controller: horaSalidaController),
-
-                const SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Solicitud enviada correctamente")),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                    ),
-                    child: const Text("Enviar Solicitud", style: TextStyle(fontSize: 16, color: Colors.white)),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Datos del Estudiante",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(label: "Nombre", initialValue: nombreUsuario, enabled: false),
+                      _buildTextField(label: "DNI", initialValue: dniUsuario, enabled: false),
+                      _buildTextField(label: "Celular", initialValue: celularUsuario, enabled: false),
+                      _buildTextField(label: "Email", initialValue: emailUsuario, enabled: false),
+                      _buildTextField(label: "Tipo de Usuario", initialValue: tipoUsuario, enabled: false),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Detalles de la Solicitud",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(label: "Asignatura", controller: asignaturaController),
+                      _buildTextField(label: "Trabajo a Realizar", controller: trabajoController),
+                      _buildTextField(label: "Docente a Cargo", controller: docenteController),
+                      _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
+                      _buildTextField(label: "Fecha de Entrega", controller: fechaEntregaController),
+                      _buildTextField(label: "Fecha de Devolución", controller: fechaDevolucionController),
+                      _buildTextField(label: "Hora de Salida del Equipo", controller: horaSalidaController),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Solicitud enviada correctamente")),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                          ),
+                          child: const Text("Enviar Solicitud", style: TextStyle(fontSize: 16, color: Colors.white)),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
