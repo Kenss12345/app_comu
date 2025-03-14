@@ -1,4 +1,5 @@
 import 'package:app_comu/firebase_options.dart';
+import 'package:app_comu/screens/solicitud_equipos_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(), // Define la ruta de login
         '/profile': (context) => const ProfileScreen(),
+        '/solicitud_equipos': (context) => SolicitudEquiposScreen(),
       },
     );
   }
