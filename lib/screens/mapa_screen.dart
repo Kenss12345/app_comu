@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class MapaScreen extends StatelessWidget {
+class MapaScreen extends StatefulWidget {
   const MapaScreen({super.key});
+
+  @override
+  _MapaScreenState createState() => _MapaScreenState();
+}
+
+class _MapaScreenState extends State<MapaScreen> {
+  late GoogleMapController mapController;
+
+  final LatLng _center = const LatLng(-12.0651, -75.2049); // Coordenadas de Huancayo
+
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,11 +24,11 @@ class MapaScreen extends StatelessWidget {
         title: const Text("Mapa de Ubicación"),
         backgroundColor: Colors.blue,
       ),
-      body: const Center(
-        child: Text(
-          "Aquí se mostrará el mapa con la ubicación de los estudiantes",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      body: GoogleMap(
+        onMapCreated: _onMapCreated,
+        initialCameraPosition: CameraPosition(
+          target: _center,
+          zoom: 14.0,
         ),
       ),
     );
