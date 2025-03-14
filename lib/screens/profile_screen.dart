@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'equipos_disponibles_screen.dart';
 import 'equipos_a_cargo_screen.dart';
@@ -64,7 +65,159 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 // Widget que contiene el contenido de la pantalla de perfil
-class ProfileContent extends StatelessWidget {
+class ProfileContent extends StatefulWidget {
+  const ProfileContent({super.key});
+
+  @override
+  _ProfileContentState createState() => _ProfileContentState();
+}
+
+class _ProfileContentState extends State<ProfileContent> {
+  User? user = FirebaseAuth.instance.currentUser;
+  Map<String, dynamic>? userData;
+  bool _isEditing = false;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _dniController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user!.uid).get();
+      if (userDoc.exists && mounted) {
+        setState(() {
+          userData = userDoc.data() as Map<String, dynamic>;
+          _nameController.text = userData?['nombre'] ?? '';
+          _dniController.text = userData?['dni'] ?? '';
+          _phoneController.text = userData?['celular'] ?? '';
+        });
+      }
+    }
+  }
+
+  Future<void> _updateUserData() async {
+    if (user != null) {
+      await FirebaseFirestore.instance.collection('usuarios').doc(user!.uid).update({
+        'nombre': _nameController.text.trim(),
+        'dni': _dniController.text.trim(),
+        'celular': _phoneController.text.trim(),
+      });
+      setState(() {
+        _isEditing = false;
+        userData?['nombre'] = _nameController.text.trim();
+        userData?['dni'] = _dniController.text.trim();
+        userData?['celular'] = _phoneController.text.trim();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Perfil actualizado correctamente"), backgroundColor: Colors.green),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (userData == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundImage: user?.photoURL != null
+                      ? NetworkImage(user!.photoURL!) as ImageProvider
+                      : const AssetImage('assets/user.png'),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.blue,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.white),
+                      onPressed: () {
+                        setState(() {
+                          _isEditing = !_isEditing;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _isEditing
+                ? TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: "Nombre y Apellidos"),
+                  )
+                : Text(userData?['nombre'] ?? "Usuario sin nombre", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 5),
+            Text(user?.email ?? "Correo no disponible"),
+            const SizedBox(height: 5),
+            _isEditing
+                ? TextField(
+                    controller: _dniController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: "DNI"),
+                  )
+                : Text("DNI: ${userData?['dni'] ?? 'No registrado'}"),
+            const SizedBox(height: 5),
+            _isEditing
+                ? TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: "Celular"),
+                  )
+                : Text("Celular: ${userData?['celular'] ?? 'No registrado'}"),
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.green.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                userData?['estado'] ?? "Buen Usuario",
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _isEditing
+                ? ElevatedButton(
+                    onPressed: _updateUserData,
+                    child: const Text("Guardar Cambios"),
+                  )
+                : ElevatedButton(
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.of(context).pushReplacementNamed('/login');
+                    },
+                    child: const Text("Cerrar Sesión"),
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Widget que contiene el contenido de la pantalla de perfil
+/*class ProfileContent extends StatelessWidget {
   const ProfileContent({super.key});
 
   @override
@@ -137,7 +290,7 @@ class ProfileContent extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 /*class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
