@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:app_comu/screens/profile_screen.dart';
 
@@ -23,6 +24,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
     try {
+      // Registrar usuario en Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      User? user = userCredential.user;
+      if (user != null) {
+        // Guardar usuario en Firestore con el rol de "estudiante"
+        await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set({
+          'email': user.email,
+          'rol': 'estudiante', // Asignar rol predeterminado
+          'uid': user.uid,
+        });
+
+        // Redirigir a la pantalla de perfil
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      _showError(e.message ?? "Error desconocido");
+    } on FirebaseException catch (e) {
+      _showError("Error al guardar los datos: ${e.message}");
+    }
+
+    setState(() => _isLoading = false);
+
+    /*setState(() => _isLoading = true);
+    try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -35,7 +67,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } on FirebaseAuthException catch (e) {
       _showError(e.message ?? "Error desconocido");
     }
-    setState(() => _isLoading = false);
+    setState(() => _isLoading = false);*/
+
   }
 
   void _showError(String message) {

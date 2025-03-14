@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:app_comu/screens/usuarios_con_equipos_screen.dart';
@@ -24,29 +25,33 @@ class _GestorLoginScreenState extends State<GestorLoginScreen> {
 
       User? user = userCredential.user;
       if (user != null) {
-        // Validar que el usuario sea un gestor
-        if (_isGestor(user.email!)) {
+        bool esGestor = await _verificarRolGestor(user.uid);
+        if (esGestor) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => UsuariosConEquiposScreen()),
           );
         } else {
+          FirebaseAuth.instance.signOut();
           _showError("No tienes permisos para acceder como gestor.");
         }
       }
     } on FirebaseAuthException catch (e) {
       _showError(e.message ?? "Error al iniciar sesión");
     }
+
     setState(() => _isLoading = false);
   }
 
-  bool _isGestor(String email) {
-    // Lista de correos permitidos para gestores
-    List<String> correosGestores = [
-      "gestor1@continental.edu.pe",
-      "gestor2@continental.edu.pe"
-    ];
-    return correosGestores.contains(email);
+  Future<bool> _verificarRolGestor(String uid) async {
+    DocumentSnapshot snapshot =
+        await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
+
+    if (snapshot.exists) {
+      String? rol = snapshot['rol'];
+      return rol == "gestor";
+    }
+    return false;
   }
 
   void _showError(String message) {
@@ -104,4 +109,54 @@ class _GestorLoginScreenState extends State<GestorLoginScreen> {
       ),
     );
   }
+
+  /*@override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Acceso de Gestores")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/UC.png', width: 100), // Logo
+            const SizedBox(height: 20),
+            const Text(
+              "Inicio de Sesión - Gestores",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Correo Electrónico',
+                prefixIcon: Icon(Icons.email),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Contraseña',
+                prefixIcon: Icon(Icons.lock),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _login,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Iniciar Sesión"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }*/
 }
