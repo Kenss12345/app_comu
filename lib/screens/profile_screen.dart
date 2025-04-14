@@ -88,14 +88,35 @@ class _ProfileContentState extends State<ProfileContent> {
 
   Future<void> _fetchUserData() async {
     if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user!.uid).get();
-      if (userDoc.exists && mounted) {
-        setState(() {
-          userData = userDoc.data() as Map<String, dynamic>;
-          _nameController.text = userData?['nombre'] ?? '';
-          _dniController.text = userData?['dni'] ?? '';
-          _phoneController.text = userData?['celular'] ?? '';
-        });
+      try {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(user!.uid)
+            .get();
+
+        if (!userDoc.exists) {
+          // El documento no existe, cerrar sesión y redirigir
+          await FirebaseAuth.instance.signOut();
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/login');
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              userData = userDoc.data() as Map<String, dynamic>;
+              _nameController.text = userData?['nombre'] ?? '';
+              _dniController.text = userData?['dni'] ?? '';
+              _phoneController.text = userData?['celular'] ?? '';
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('Error al obtener datos del usuario: $e');
+        // Si ocurre un error inesperado, también puedes cerrar sesión por seguridad
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
       }
     }
   }
@@ -118,6 +139,36 @@ class _ProfileContentState extends State<ProfileContent> {
       );
     }
   }
+
+  Map<String, dynamic> getUserStatus(int puntos) {
+    if (puntos >= 15 && puntos <= 20) {
+      return {
+        'tipo': 'Usuario Premium',
+        'color': Colors.blue,
+      };
+    } else if (puntos >= 8 && puntos <= 14) {
+      return {
+        'tipo': 'Buen Usuario',
+        'color': Colors.green,
+      };
+    } else if (puntos >= 5 && puntos <= 7) {
+      return {
+        'tipo': 'Usuario Regular',
+        'color': Colors.yellow.shade700,
+      };
+    } else if (puntos >= 1 && puntos <= 4) {
+      return {
+        'tipo': 'Usuario en Riesgo',
+        'color': Colors.orange,
+      };
+    } else {
+      return {
+        'tipo': 'Usuario Bloqueado',
+        'color': Colors.red,
+      };
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +210,7 @@ class _ProfileContentState extends State<ProfileContent> {
                 ),
               ],
             ),
+            
             const SizedBox(height: 10),
             _isEditing
                 ? TextField(
@@ -166,9 +218,11 @@ class _ProfileContentState extends State<ProfileContent> {
                     decoration: const InputDecoration(labelText: "Nombre y Apellidos"),
                   )
                 : Text(userData?['nombre'] ?? "Usuario sin nombre", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            
             const SizedBox(height: 5),
             Text(user?.email ?? "Correo no disponible"),
-            const SizedBox(height: 5),
+
+            const SizedBox(height: 5),            
             _isEditing
                 ? TextField(
                     controller: _dniController,
@@ -176,6 +230,7 @@ class _ProfileContentState extends State<ProfileContent> {
                     decoration: const InputDecoration(labelText: "DNI"),
                   )
                 : Text("DNI: ${userData?['dni'] ?? 'No registrado'}"),
+
             const SizedBox(height: 5),
             _isEditing
                 ? TextField(
@@ -184,18 +239,34 @@ class _ProfileContentState extends State<ProfileContent> {
                     decoration: const InputDecoration(labelText: "Celular"),
                   )
                 : Text("Celular: ${userData?['celular'] ?? 'No registrado'}"),
-            const SizedBox(height: 15),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.green.shade300,
-                borderRadius: BorderRadius.circular(10),
+
+            const SizedBox(height: 10),
+            if (userData?['puntos'] != null) ...[
+              Builder(
+                builder: (_) {
+                  final puntos = userData!['puntos'] as int;
+                  final status = getUserStatus(puntos);
+                  return Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: status['color'],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          "Tipo de usuario: ${status['tipo']}",
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text("Puntaje actual: $puntos", style: const TextStyle(fontSize: 16)),
+                    ],
+                  );
+                },
               ),
-              child: Text(
-                userData?['estado'] ?? "Buen Usuario",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
+            ],
+
             const SizedBox(height: 20),
             _isEditing
                 ? ElevatedButton(

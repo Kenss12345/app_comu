@@ -21,8 +21,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _acceptTerms = false; // Checkbox de Términos y Condiciones
 
   Future<void> _register() async {
-    if (_passwordController.text.trim() != _confirmPasswordController.text.trim()) {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
       _showError("Las contraseñas no coinciden");
+      return;
+    }
+
+    if (!email.endsWith('@continental.edu.pe')) {
+      _showError("Solo se permite el registro con el correo institucional.");
       return;
     }
 
@@ -35,14 +44,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       // Registrar usuario en Firebase Authentication
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        email: email,
+        password: password,
       );
 
       User? user = userCredential.user;
       if (user != null) {
         // Guardar usuario en Firestore con el rol de "estudiante"
         await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set({
+          'TipoUser': 'Buen Usuario',
           'nombre': _nameController.text.trim(),
           'dni': _dniController.text.trim(),
           'celular': _phoneController.text.trim(),
@@ -50,6 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'rol': 'estudiante', // Asignar rol predeterminado
           'uid': user.uid,
           'acepto_terminos': _acceptTerms,
+          'puntos': 10,
         });
 
         // Redirigir a la pantalla de perfil
