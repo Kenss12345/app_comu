@@ -72,7 +72,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
     });
   }
 
-  @override
+  /*@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -148,7 +148,99 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
         ),
       ),
     );
+  }*/
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Equipos a Cargo"),
+        backgroundColor: Colors.orange,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          children: [
+            if (equiposACargo.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    "Ningún equipo a cargo",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: equiposACargo.length,
+                  itemBuilder: (context, index) {
+                    var equipo = equiposACargo[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      elevation: 3,
+                      child: ListTile(
+                        leading: Image.network(
+                          equipo["imagen"],
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        ),
+                        title: Text(
+                          equipo["nombre"],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Préstamo: ${equipo["fecha_prestamo"]}"),
+                            Text("Devolución: ${equipo["fecha_devolucion"]}"),
+                            Text(
+                              "Estado: ${equipo["estado_prestamo"]}",
+                              style: TextStyle(color: Colors.orange),
+                            ),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.close, color: Colors.red),
+                          onPressed: () => _eliminarEquipo(index),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 10),
+            if (equiposACargo.isNotEmpty && !solicitudRealizada)
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    solicitudRealizada = true;
+                    _iniciarContador();
+                  });
+                  Navigator.pushNamed(context, '/solicitud_equipos');
+                },
+                child: const Text("Solicitar Equipos"),
+              )
+            else if (solicitudRealizada)
+              Column(
+                children: [
+                  const Text(
+                    "Tiempo restante de entrega:",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    "${tiempoRestante.inHours}:${(tiempoRestante.inMinutes % 60).toString().padLeft(2, '0')}:${(tiempoRestante.inSeconds % 60).toString().padLeft(2, '0')}",
+                    style: const TextStyle(fontSize: 20, color: Colors.red, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
   }
+
 }
 
 

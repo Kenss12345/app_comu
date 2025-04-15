@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app_comu/utils/carrito_equipos.dart';
+import 'package:intl/intl.dart';
+
+List<Map<String, dynamic>> equiposSeleccionados = CarritoEquipos().equipos;
 
 class SolicitudEquiposScreen extends StatefulWidget {
   const SolicitudEquiposScreen({super.key});
@@ -18,6 +22,8 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   String tipoUsuario = "";
   String celularUsuario = "";
   String emailUsuario = "";
+  String fechaPrestamo = "";
+  String fechaDevolucion = "";
   bool isLoading = true;
 
   // Controladores para los campos editables
@@ -25,14 +31,23 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   final TextEditingController trabajoController = TextEditingController();
   final TextEditingController docenteController = TextEditingController();
   final TextEditingController lugarController = TextEditingController();
-  final TextEditingController fechaEntregaController = TextEditingController();
-  final TextEditingController fechaDevolucionController = TextEditingController();
+  //final TextEditingController fechaEntregaController = TextEditingController();
+  //final TextEditingController fechaDevolucionController = TextEditingController();
   final TextEditingController horaSalidaController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _cargarDatosUsuario();
+    _calcularFechas();
+  }
+
+  void _calcularFechas() {
+    final hoy = DateTime.now();
+    final dosDiasDespues = hoy.add(Duration(days: 2));
+    final format = DateFormat('dd/MM/yyyy');
+    fechaPrestamo = format.format(hoy);
+    fechaDevolucion = format.format(dosDiasDespues);
   }
 
   Future<void> _cargarDatosUsuario() async {
@@ -49,6 +64,41 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _enviarSolicitud() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final equipos = CarritoEquipos().equipos;
+
+        await FirebaseFirestore.instance.collection('solicitudes').add({
+          'uid': user.uid,
+          'nombre': nombreUsuario,
+          'email': emailUsuario,
+          'dni': dniUsuario,
+          'celular': celularUsuario,
+          'tipoUsuario': tipoUsuario,
+          'asignatura': asignaturaController.text,
+          'trabajo': trabajoController.text,
+          'docente': docenteController.text,
+          'lugar': lugarController.text,
+          'hora_salida': horaSalidaController.text,
+          'fecha_prestamo': fechaPrestamo,
+          'fecha_devolucion': fechaDevolucion,
+          'fecha_envio': Timestamp.now(),
+          'equipos': equipos,
+        });
+
+        CarritoEquipos().limpiarCarrito();
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Solicitud enviada correctamente")));
+
+        Navigator.pop(context); // Volver atrás
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error al enviar solicitud: $e")));
     }
   }
 
@@ -89,17 +139,38 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
                       _buildTextField(label: "Trabajo a Realizar", controller: trabajoController),
                       _buildTextField(label: "Docente a Cargo", controller: docenteController),
                       _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
-                      _buildTextField(label: "Fecha de Entrega", controller: fechaEntregaController),
-                      _buildTextField(label: "Fecha de Devolución", controller: fechaDevolucionController),
+                      Text("Fecha de Entrega: $fechaPrestamo", style: TextStyle(fontSize: 16)),
+                      SizedBox(height: 8),
+                      Text("Fecha de Devolución: $fechaDevolucion", style: TextStyle(fontSize: 16)),
+                      SizedBox(height: 16),
                       _buildTextField(label: "Hora de Salida del Equipo", controller: horaSalidaController),
                       const SizedBox(height: 20),
+
+                      const SizedBox(height: 20),
+                        const Text(
+                          "Equipos Seleccionados",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: equiposSeleccionados.length,
+                          itemBuilder: (context, index) {
+                            var equipo = equiposSeleccionados[index];
+                            return ListTile(
+                              leading: Image.network(equipo["imagen"], width: 50, height: 50),
+                              title: Text(equipo["nombre"]),
+                              subtitle: Text("Estado: ${equipo["estado_prestamo"]}"),
+                            );
+                          },
+                        ),
+
                       Center(
                         child: ElevatedButton(
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Solicitud enviada correctamente")),
-                              );
+                              _enviarSolicitud();
                             }
                           },
                           style: ElevatedButton.styleFrom(
