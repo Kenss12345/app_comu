@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:app_comu/utils/carrito_equipos.dart';
 
 class EquiposDisponiblesScreen extends StatefulWidget {
   const EquiposDisponiblesScreen({super.key});
@@ -12,9 +14,37 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   final TextEditingController _searchController = TextEditingController();
   String searchQuery = "";
 
+  List<Map<String, dynamic>> equipos = [];
   final List<Map<String, dynamic>> equiposACargo = [];
 
-  final Map<String, List<Map<String, dynamic>>> categorias = {
+  @override
+  void initState() {
+    super.initState();
+    _loadEquiposDesdeFirestore();
+  }
+
+  
+
+  Future<void> _loadEquiposDesdeFirestore() async {
+    final snapshot = await FirebaseFirestore.instance.collection('equipos').get();
+
+    setState(() {
+      equipos = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'nombre': data['nombre'],
+          'descripcion': data['descripcion'],
+          'imagenes': List<String>.from(data['imagenes']),
+          'estado': data['estado'],
+          'tiempoMax': data['tiempoMax'],
+          'categoria': data['categoria'],
+        };
+      }).toList();
+    });
+  }
+
+  /*final Map<String, List<Map<String, dynamic>>> categorias = {
     "Video": [
       {
         "nombre": "Cámara Sony Alpha",
@@ -76,9 +106,9 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
         "tiempoMax": "3 horas"
       }
     ]*/
-  };
+  };*/
 
-  void _anadirAEquiposACargo(Map<String, dynamic> equipo) {
+  /*void _anadirAEquiposACargo(Map<String, dynamic> equipo) {
     setState(() {
       equiposACargo.add(equipo);
     });
@@ -86,7 +116,27 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("${equipo["nombre"]} añadido a equipos a cargo.")),
     );
-  }
+  }*/
+
+  void _anadirAEquiposACargo(Map<String, dynamic> equipo) {
+  final DateTime ahora = DateTime.now();
+  final DateTime devolucion = ahora.add(Duration(days: 2));
+
+  final equipoConFechas = {
+    ...equipo,
+    "fecha_prestamo": ahora.toString().split(' ')[0],
+    "fecha_devolucion": devolucion.toString().split(' ')[0],
+    "estado_prestamo": "Pendiente",
+    "imagen": equipo['imagenes'].isNotEmpty ? equipo['imagenes'][0] : "", // para mostrarlo en la otra pantalla
+  };
+
+  CarritoEquipos().agregarEquipo(equipoConFechas);
+
+  Navigator.pop(context);
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("${equipo["nombre"]} añadido a equipos a cargo.")),
+  );
+}
 
   // Lista de equipos simulados (por ahora sin base de datos)
   /*final List<Map<String, dynamic>> equipos = [
@@ -117,7 +167,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     },
   ];*/
 
-  void _mostrarDetalles(BuildContext context, Map<String, dynamic> equipo) {
+  /*void _mostrarDetalles(BuildContext context, Map<String, dynamic> equipo) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -166,9 +216,151 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
         );
       },
     );
+  }*/
+
+  void _mostrarDetalles(BuildContext context, Map<String, dynamic> equipo) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                children: [
+                  CarouselSlider(
+                    options: CarouselOptions(height: 250.0, autoPlay: true),
+                    items: (equipo["imagenes"] as List).isNotEmpty
+                      ? equipo["imagenes"].map<Widget>((img) {
+                          return Image.network(img, fit: BoxFit.cover);
+                        }).toList()
+                      : [Icon(Icons.broken_image, size: 200)],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(equipo["nombre"],
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        Text(equipo["descripcion"]),
+                        const SizedBox(height: 10),
+                        Text("Estado: ${equipo["estado"]}",
+                            style: TextStyle(
+                              color: equipo["estado"] == "Disponible"
+                                  ? Colors.green
+                                  : equipo["estado"] == "En Uso"
+                                      ? Colors.orange
+                                      : Colors.red,
+                            )),
+                        Text("Tiempo Máximo: ${equipo["tiempoMax"]}"),
+                        const SizedBox(height: 20),
+                        if (equipo["estado"] == "Disponible") 
+                          ElevatedButton(
+                            onPressed: () => _anadirAEquiposACargo(equipo),
+                            child: const Text("Añadir Equipo"),
+                          )
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
+  Widget build(BuildContext context) {
+    // Agrupar equipos por categoría
+    Map<String, List<Map<String, dynamic>>> categorias = {};
+    for (var equipo in equipos) {
+      if (equipo["nombre"].toLowerCase().contains(searchQuery.toLowerCase())) {
+        final categoria = equipo["categoria"];
+        categorias[categoria] = categorias[categoria] ?? [];
+        categorias[categoria]!.add(equipo);
+      }
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Equipos Disponibles"),
+        backgroundColor: Colors.orange,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: "Buscar equipos...",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onChanged: (query) {
+                setState(() {
+                  searchQuery = query;
+                });
+              },
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: equipos.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(
+                      children: categorias.entries.map((categoria) {
+                        return ExpansionTile(
+                          title: Text(
+                            categoria.key,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          children: categoria.value.map((equipo) {
+                            return ListTile(
+                              leading: equipo["imagenes"].isNotEmpty
+                              ? Image.network(
+                                equipo["imagenes"][0],
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                              )
+                            : Icon(Icons.broken_image, size: 50, color: Colors.grey),
+
+                              title: Text(equipo["nombre"]),
+                              subtitle: Text(equipo["descripcion"]),
+                              trailing: Chip(
+                                label: Text(
+                                  equipo["estado"],
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: equipo["estado"] == "Disponible"
+                                    ? Colors.green
+                                    : equipo["estado"] == "En Uso"
+                                        ? Colors.orange
+                                        : Colors.red,
+                              ),
+                              onTap: () => _mostrarDetalles(context, equipo),
+                            );
+                          }).toList(),
+                        );
+                      }).toList(),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /*@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -224,7 +416,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
         ),
       ),
     );
-  }
+  }*/
 
   /*@override
   Widget build(BuildContext context) {

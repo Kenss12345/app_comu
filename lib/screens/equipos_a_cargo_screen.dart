@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:app_comu/utils/carrito_equipos.dart';
 
 class EquiposACargoScreen extends StatefulWidget {
   const EquiposACargoScreen({super.key});
@@ -8,10 +9,12 @@ class EquiposACargoScreen extends StatefulWidget {
   _EquiposACargoScreenState createState() => _EquiposACargoScreenState();
 }
 
+
+
 class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   
 
-  List<Map<String, dynamic>> equiposACargo = [
+  /*List<Map<String, dynamic>> equiposACargo = [
     {
       "nombre": "Cámara Sony Alpha",
       "fecha_prestamo": "2025-03-10",
@@ -30,7 +33,10 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
       "fecha_devolucion": "2025-03-22",
       "imagen": "assets/luz_neewer.png",
     },
-  ];
+  ];*/
+
+  List<Map<String, dynamic>> get equiposACargo => CarritoEquipos().equipos;
+
 
   bool solicitando = false;
   bool solicitudRealizada = false;
@@ -55,7 +61,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
 
   void _eliminarEquipo(int index) {
     setState(() {
-      equiposACargo.removeAt(index);
+      CarritoEquipos().eliminarEquipo(index);
     });
   }
 
@@ -86,7 +92,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     elevation: 3,
                     child: ListTile(
-                      leading: Image.asset(
+                      leading: Image.network(
                         equipo["imagen"],
                         width: 50,
                         height: 50,
@@ -101,6 +107,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                         children: [
                           Text("Préstamo: ${equipo["fecha_prestamo"]}"),
                           Text("Devolución: ${equipo["fecha_devolucion"]}"),
+                          Text("Estado: ${equipo["estado_prestamo"]}", style: TextStyle(color: Colors.orange)),
                         ],
                       ),
                       trailing: IconButton(
