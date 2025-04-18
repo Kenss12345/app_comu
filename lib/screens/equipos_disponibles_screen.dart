@@ -23,8 +23,6 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     _loadEquiposDesdeFirestore();
   }
 
-  
-
   Future<void> _loadEquiposDesdeFirestore() async {
     final snapshot = await FirebaseFirestore.instance.collection('equipos').get();
 
@@ -278,7 +276,149 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     );
   }
 
+  String? categoriaSeleccionada;
+  String? disponibilidadSeleccionada;
+
   @override
+  Widget build(BuildContext context) {
+    // Obtener categorías únicas
+    final categoriasUnicas = equipos.map((e) => e["categoria"] as String).toSet().toList();
+
+    // Filtrar equipos según búsqueda, categoría y disponibilidad
+    final equiposFiltrados = equipos.where((equipo) {
+      final coincideBusqueda = equipo["nombre"].toLowerCase().contains(searchQuery.toLowerCase());
+      final coincideCategoria = categoriaSeleccionada == null || equipo["categoria"] == categoriaSeleccionada;
+      final esDisponible = equipo["estado"] == "Disponible";
+      final coincideDisponibilidad = disponibilidadSeleccionada == null ||
+          (disponibilidadSeleccionada == "Disponible" && esDisponible) ||
+          (disponibilidadSeleccionada == "No disponible" && !esDisponible);
+      return coincideBusqueda && coincideCategoria && coincideDisponibilidad;
+    }).toList();
+
+    // Agrupar equipos filtrados por categoría
+    Map<String, List<Map<String, dynamic>>> categoriasAgrupadas = {};
+    for (var equipo in equiposFiltrados) {
+      final categoria = equipo["categoria"];
+      categoriasAgrupadas[categoria] = categoriasAgrupadas[categoria] ?? [];
+      categoriasAgrupadas[categoria]!.add(equipo);
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Equipos Disponibles"),
+        backgroundColor: Colors.orange,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: "Buscar equipos...",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onChanged: (query) {
+                setState(() {
+                  searchQuery = query;
+                });
+              },
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                // Dropdown de categorías
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: categoriaSeleccionada,
+                    decoration: const InputDecoration(labelText: "Categoría"),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text("Todas")),
+                      ...categoriasUnicas.map((categoria) {
+                        return DropdownMenuItem(
+                          value: categoria,
+                          child: Text(categoria),
+                        );
+                      }).toList(),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        categoriaSeleccionada = value;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Dropdown de disponibilidad
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: disponibilidadSeleccionada,
+                    decoration: const InputDecoration(labelText: "Disponibilidad"),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text("Todas")),
+                      DropdownMenuItem(value: "Disponible", child: Text("Disponible")),
+                      DropdownMenuItem(value: "No disponible", child: Text("No disponible")),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        disponibilidadSeleccionada = value;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: equipos.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : categoriasAgrupadas.isEmpty
+                      ? const Center(child: Text("No se encontraron equipos."))
+                      : ListView(
+                          children: categoriasAgrupadas.entries.map((categoria) {
+                            return ExpansionTile(
+                              title: Text(
+                                categoria.key,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              children: categoria.value.map((equipo) {
+                                return ListTile(
+                                  leading: equipo["imagenes"].isNotEmpty
+                                      ? Image.network(
+                                          equipo["imagenes"][0],
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                                  title: Text(equipo["nombre"]),
+                                  subtitle: Text(equipo["descripcion"]),
+                                  trailing: Chip(
+                                    label: Text(
+                                      equipo["estado"],
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                    backgroundColor: equipo["estado"] == "Disponible"
+                                        ? Colors.green
+                                        : equipo["estado"] == "En Uso"
+                                            ? Colors.orange
+                                            : Colors.red,
+                                  ),
+                                  onTap: () => _mostrarDetalles(context, equipo),
+                                );
+                              }).toList(),
+                            );
+                          }).toList(),
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /*@override
   Widget build(BuildContext context) {
     // Agrupar equipos por categoría
     Map<String, List<Map<String, dynamic>>> categorias = {};
@@ -358,7 +498,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
         ),
       ),
     );
-  }
+  }*/
 
   /*@override
   Widget build(BuildContext context) {

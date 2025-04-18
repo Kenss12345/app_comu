@@ -210,4 +210,3 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     );
   }
 }
-
