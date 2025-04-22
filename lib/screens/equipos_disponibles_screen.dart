@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:app_comu/utils/carrito_equipos.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class EquiposDisponiblesScreen extends StatefulWidget {
   const EquiposDisponiblesScreen({super.key});
@@ -11,6 +12,11 @@ class EquiposDisponiblesScreen extends StatefulWidget {
 }
 
 class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
+
+  User? _usuarioActual;
+  int? _puntosUsuario;
+  bool _cargandoUsuario = true;
+
   final TextEditingController _searchController = TextEditingController();
   String searchQuery = "";
 
@@ -20,7 +26,25 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   @override
   void initState() {
     super.initState();
+    _obtenerUsuarioYPuntos();
     _loadEquiposDesdeFirestore();
+  }
+
+  Future<void> _obtenerUsuarioYPuntos() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final snapshot = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+      final data = snapshot.data();
+      setState(() {
+        _usuarioActual = user;
+        _puntosUsuario = data?['puntos'] ?? 0;
+        _cargandoUsuario = false;
+      });
+    } else {
+      setState(() {
+        _cargandoUsuario = false;
+      });
+    }
   }
 
   Future<void> _loadEquiposDesdeFirestore() async {
@@ -281,6 +305,30 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    if (_cargandoUsuario) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_puntosUsuario == 0) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text("Equipos Disponibles"),
+          backgroundColor: Colors.orange,
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Text(
+              "Usuario bloqueado, no puede solicitar equipos. Acérquese a la oficina de equipos para regular su estado.",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      );
+    }
+
     // Obtener categorías únicas
     final categoriasUnicas = equipos.map((e) => e["categoria"] as String).toSet().toList();
 
