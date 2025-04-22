@@ -48,6 +48,34 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   }
 
   Future<void> _loadEquiposDesdeFirestore() async {
+  final snapshot = await FirebaseFirestore.instance.collection('equipos').get();
+
+  setState(() {
+    equipos = snapshot.docs.map((doc) {
+      final data = doc.data();
+      final tipoEquipo = data['tipoEquipo'] ?? 'normal';
+
+      // Si el equipo es premium y el usuario no tiene suficientes puntos, se omite
+      if (tipoEquipo == 'premium' && (_puntosUsuario ?? 0) < 15) {
+        return null;
+      }
+
+      return {
+        'id': doc.id,
+        'nombre': data['nombre'],
+        'descripcion': data['descripcion'],
+        'imagenes': List<String>.from(data['imagenes']),
+        'estado': data['estado'],
+        'tiempoMax': data['tiempoMax'],
+        'categoria': data['categoria'],
+        'tipoEquipo': tipoEquipo,
+      };
+    }).where((equipo) => equipo != null).cast<Map<String, dynamic>>().toList();
+  });
+}
+
+
+  /*Future<void> _loadEquiposDesdeFirestore() async {
     final snapshot = await FirebaseFirestore.instance.collection('equipos').get();
 
     setState(() {
@@ -64,7 +92,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
         };
       }).toList();
     });
-  }
+  }*/
 
   /*final Map<String, List<Map<String, dynamic>>> categorias = {
     "Video": [
@@ -432,6 +460,9 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                               ),
                               children: categoria.value.map((equipo) {
                                 return ListTile(
+
+                                  
+
                                   leading: equipo["imagenes"].isNotEmpty
                                       ? Image.network(
                                           equipo["imagenes"][0],
@@ -440,8 +471,22 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                           fit: BoxFit.cover,
                                         )
                                       : const Icon(Icons.broken_image, size: 50, color: Colors.grey),
-                                  title: Text(equipo["nombre"]),
+
+                                  /*title: Text(equipo["nombre"]),*/
+
+                                  title: Row(
+                                    children: [
+                                      Text(equipo["nombre"]),
+                                      if (equipo["tipoEquipo"] == "premium" && (_puntosUsuario ?? 0) >= 15)
+                                        const Padding(
+                                          padding: EdgeInsets.only(left: 8.0),
+                                          child: Icon(Icons.star, color: Colors.amber, size: 18),
+                                        ),
+                                    ],
+                                  ),
+
                                   subtitle: Text(equipo["descripcion"]),
+
                                   trailing: Chip(
                                     label: Text(
                                       equipo["estado"],
@@ -453,6 +498,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                             ? Colors.orange
                                             : Colors.red,
                                   ),
+
                                   onTap: () => _mostrarDetalles(context, equipo),
                                 );
                               }).toList(),
