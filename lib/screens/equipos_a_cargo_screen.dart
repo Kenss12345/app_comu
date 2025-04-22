@@ -9,8 +9,6 @@ class EquiposACargoScreen extends StatefulWidget {
   _EquiposACargoScreenState createState() => _EquiposACargoScreenState();
 }
 
-
-
 class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   
 
@@ -160,7 +158,17 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
       body: Padding(
         padding: const EdgeInsets.all(10.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: const Text(
+                "🕒 Horario de devolución: Lunes a viernes de 8:00 am a 1:00 pm y sábado de 9:00 am a 1:00 pm",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
+              ),
+            ),
+
             if (equiposACargo.isEmpty)
               Expanded(
                 child: Center(

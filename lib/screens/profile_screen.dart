@@ -54,10 +54,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icon(Icons.assignment),
             label: 'A cargo',
           ),
-          BottomNavigationBarItem(
+
+          /*BottomNavigationBarItem(
             icon: Icon(Icons.add_circle),
             label: 'Solicitud',
-          ),
+          ),*/
+
         ],
       ),
     );
