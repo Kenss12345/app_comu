@@ -35,10 +35,10 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
 
   List<Map<String, dynamic>> get equiposACargo => CarritoEquipos().equipos;
 
-
-  bool solicitando = false;
+  //bool solicitando = false;
   bool solicitudRealizada = false;
-  Duration tiempoRestante = Duration(hours: 48); // Tiempo de ejemplo
+
+  /*Duration tiempoRestante = Duration(hours: 48); // Tiempo de ejemplo
   Timer? _timer;
 
   void _iniciarContador() {
@@ -55,7 +55,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
       _timer?.cancel(); // Cancela el timer si el widget ya no está montado
     }
   });
-}
+}*/
 
   void _eliminarEquipo(int index) {
     setState(() {
@@ -63,12 +63,25 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
     });
   }
 
-  void _solicitarEquipos() {
+  Future<void> _navegarYSolicitarEquipos() async {
+    final resultado = await Navigator.pushNamed(context, '/solicitud_equipos');
+
+    // Si se envió la solicitud, refrescar pantalla
+    if (resultado == true) {
+      setState(() {});
+    }
+  }
+
+  bool _hayEquiposEnUso() {
+    return equiposACargo.any((equipo) => equipo["estado_prestamo"] == "en uso");
+  }
+
+  /*void _solicitarEquipos() {
     setState(() {
       solicitudRealizada = true;
-      _iniciarContador();
+      //_iniciarContador();
     });
-  }
+  }*/
 
   /*@override
   Widget build(BuildContext context) {
@@ -148,7 +161,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
     );
   }*/
 
-  @override
+  /*@override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -224,13 +237,13 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                 onPressed: () {
                   setState(() {
                     solicitudRealizada = true;
-                    _iniciarContador();
+                    //_iniciarContador();
                   });
                   Navigator.pushNamed(context, '/solicitud_equipos');
                 },
                 child: const Text("Solicitar Equipos"),
               )
-            else if (solicitudRealizada)
+            /*else if (solicitudRealizada)
               Column(
                 children: [
                   const Text(
@@ -242,6 +255,229 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                     style: const TextStyle(fontSize: 20, color: Colors.red, fontWeight: FontWeight.bold),
                   ),
                 ],
+              ),*/
+          ],
+        ),
+      ),
+    );
+  }*/
+
+  /*@override
+  Widget build(BuildContext context) {
+    final hayEquiposEnUso = _hayEquiposEnUso();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Equipos a Cargo"),
+        backgroundColor: Colors.orange,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: const Text(
+                "🕒 Horario de devolución: Lunes a viernes de 8:00 am a 1:00 pm y sábado de 9:00 am a 1:00 pm",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
+              ),
+            ),
+            if (equiposACargo.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    "Ningún equipo a cargo",
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.builder(
+                  itemCount: equiposACargo.length,
+                  itemBuilder: (context, index) {
+                    var equipo = equiposACargo[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      elevation: 3,
+                      child: ListTile(
+                        leading: Image.network(
+                          equipo["imagen"],
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        ),
+                        title: Text(
+                          equipo["nombre"],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Préstamo: ${equipo["fecha_prestamo"]}"),
+                            Text("Devolución: ${equipo["fecha_devolucion"]}"),
+                            Text(
+                              "Estado: ${equipo["estado_prestamo"]}",
+                              style: TextStyle(color: Colors.orange),
+                            ),
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.close, color: Colors.red),
+                          onPressed: () => _eliminarEquipo(index),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 10),
+            if (equiposACargo.isNotEmpty && !solicitudRealizada && !hayEquiposEnUso)
+              ElevatedButton(
+                onPressed: _navegarYSolicitarEquipos,
+                child: const Text("Solicitar Equipos"),
+              )
+            else if (hayEquiposEnUso)
+              const Text(
+                "No puedes solicitar nuevos equipos mientras tienes equipos en uso.",
+                style: TextStyle(color: Colors.redAccent),
+              ),
+          ],
+        ),
+      ),
+    );
+  }*/
+
+  @override
+  Widget build(BuildContext context) {
+    final hayEquiposEnUso = _hayEquiposEnUso();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Equipos a Cargo"),
+        backgroundColor: Colors.orange.shade600,
+        elevation: 2,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              child: const Row(
+                children: [
+                  Icon(Icons.access_time, color: Colors.orange),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "Horario de devolución: Lunes a viernes de 8:00 am a 1:00 pm y sábado de 9:00 am a 1:00 pm",
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (equiposACargo.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    "📭 Ningún equipo a cargo",
+                    style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  itemCount: equiposACargo.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    var equipo = equiposACargo[index];
+                    return Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(12),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            equipo["imagen"],
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        title: Text(
+                          equipo["nombre"],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("📅 Préstamo: ${equipo["fecha_prestamo"]}"),
+                              Text("📆 Devolución: ${equipo["fecha_devolucion"]}"),
+                              const SizedBox(height: 4),
+                              Text(
+                                "🟠 Estado: ${equipo["estado_prestamo"]}",
+                                style: TextStyle(
+                                  color: Colors.orange.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.redAccent),
+                          onPressed: () => _eliminarEquipo(index),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 20),
+            if (equiposACargo.isNotEmpty && !solicitudRealizada && !hayEquiposEnUso)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _navegarYSolicitarEquipos,
+                  icon: const Icon(Icons.send),
+                  label: const Text("Solicitar Equipos"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade600,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    textStyle: const TextStyle(fontSize: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              )
+            else if (hayEquiposEnUso)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  "⚠️ No puedes solicitar nuevos equipos mientras tienes equipos en uso.",
+                  style: TextStyle(
+                    color: Colors.red.shade600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
           ],
         ),

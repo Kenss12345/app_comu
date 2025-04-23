@@ -21,6 +21,7 @@ dependencies:
   google_maps_flutter: ^2.10.1
   google_sign_in: ^6.2.2
   intl: ^0.20.2
+  mailer: ^6.4.1
 
 dev_dependencies:
   flutter_test:
