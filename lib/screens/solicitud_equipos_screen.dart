@@ -157,93 +157,6 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     }
   }
 
-
-  /*@override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Solicitud de Equipo"),
-        backgroundColor: Colors.orange,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Datos del Estudiante",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildTextField(label: "Nombre", initialValue: nombreUsuario, enabled: false),
-                      _buildTextField(label: "DNI", initialValue: dniUsuario, enabled: false),
-                      _buildTextField(label: "Celular", initialValue: celularUsuario, enabled: false),
-                      _buildTextField(label: "Email", initialValue: emailUsuario, enabled: false),
-                      _buildTextField(label: "Tipo de Usuario", initialValue: tipoUsuario, enabled: false),
-                      const SizedBox(height: 16),
-                      const Text(
-                        "Detalles de la Solicitud",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildTextField(label: "Asignatura", controller: asignaturaController),
-                      _buildTextField(label: "Trabajo a Realizar", controller: trabajoController),
-                      _buildTextField(label: "Docente a Cargo", controller: docenteController),
-                      _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
-                      Text("Fecha de Entrega: $fechaPrestamo", style: TextStyle(fontSize: 16)),
-                      SizedBox(height: 8),
-                      Text("Fecha de Devolución: $fechaDevolucion", style: TextStyle(fontSize: 16)),
-                      SizedBox(height: 16),
-                      _buildTextField(label: "Hora de Salida del Equipo", controller: horaSalidaController),
-                      const SizedBox(height: 20),
-
-                      const SizedBox(height: 20),
-                        const Text(
-                          "Equipos Seleccionados",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: equiposSeleccionados.length,
-                          itemBuilder: (context, index) {
-                            var equipo = equiposSeleccionados[index];
-                            return ListTile(
-                              leading: Image.network(equipo["imagen"], width: 50, height: 50),
-                              title: Text(equipo["nombre"]),
-                              subtitle: Text("Estado: ${equipo["estado_prestamo"]}"),
-                            );
-                          },
-                        ),
-
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              _enviarSolicitud();
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                          ),
-                          child: const Text("Enviar Solicitud", style: TextStyle(fontSize: 16, color: Colors.white)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-    );
-  } */
-
   @override
 Widget build(BuildContext context) {
   return Scaffold(
@@ -335,7 +248,6 @@ Widget build(BuildContext context) {
   );
 }
 
-
   // Método reutilizable para construir los campos de entrada
   Widget _buildTextField({required String label, TextEditingController? controller, String? initialValue, bool enabled = true}) {
     return Padding(
@@ -359,22 +271,20 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildSectionCard({required String title, required List<Widget> children}) {
-  return Card(
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    elevation: 3,
-    child: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange[800])),
-          const SizedBox(height: 12),
-          ...children,
-        ],
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange[800])),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
       ),
-    ),
-  );
-}
-
-
+    );
+  }
 }

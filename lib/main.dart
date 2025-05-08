@@ -1,10 +1,11 @@
 import 'package:app_comu/firebase_options.dart';
 import 'package:app_comu/screens/equipos_a_cargo_screen.dart';
 import 'package:app_comu/screens/solicitud_equipos_screen.dart';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'screens/usuarios_con_equipos_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
@@ -16,14 +17,6 @@ void main() async {
 
   runApp(const MyApp());
 }
-
-/*Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-);
-  runApp(const MyApp());
-}*/
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -42,60 +35,61 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/solicitud_equipos': (context) => SolicitudEquiposScreen(),
         '/equipos_a_cargo': (context) => EquiposACargoScreen(),
+        '/usuarios_con_equipos': (context) => const UsuariosConEquiposScreen(),
       },
     );
   }
+}
 
-  /*@override
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'App Comu',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: AuthCheck(), // Verifica si el usuario está autenticado
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/profile': (context) => const ProfileScreen(),
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnap) {
+        if (authSnap.connectionState == ConnectionState.waiting) {
+          return const SplashScreen();       // Sigue mostrando splash mientras carga el estado
+        }
+        final user = authSnap.data;
+        if (user == null) {
+          return const LoginScreen();        // No autenticado → login
+        }
+        // Autenticado → consulta su rol
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .get(),
+          builder: (context, userSnap) {
+            if (userSnap.connectionState == ConnectionState.waiting) {
+              return const SplashScreen();   // Espera rol
+            }
+            if (!userSnap.hasData || !userSnap.data!.exists) {
+              // Si no existe doc de usuario, forzar logout
+              FirebaseAuth.instance.signOut();
+              return const LoginScreen();
+            }
+            final role = (userSnap.data!['rol'] as String).toLowerCase().trim();
+            if (role == 'gestor') {
+              return const UsuariosConEquiposScreen();  // Gestor → lista de usuarios
+            } else {
+              return const ProfileScreen();             // Estudiante → perfil
+            }
+          },
+        );
       },
     );
-  }*/
-
-  /*@override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'App de Préstamo de Equipos',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ProfileScreen(),
-  }*/
-
-  /*@override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Préstamo de Equipos',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const SplashScreen(), // Pantalla de carga inicial
-    );
-  }*/
+  }
 }
 
-class AuthWrapper extends StatefulWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  _AuthWrapperState createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
+/*class _AuthWrapperState extends State<AuthWrapper> {
   bool _isLoading = true;
   User? _user;
+  String? _role;
 
-  @override
+  /*@override
   void initState() {
     super.initState();
     Future.delayed(const Duration(seconds: 3), () {
@@ -104,53 +98,83 @@ class _AuthWrapperState extends State<AuthWrapper> {
         _isLoading = false;
       });
     });
-  }
+  }*/
 
   @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    // Splash delay
+    await Future.delayed(const Duration(seconds: 3));
+
+    // Comprueba si hay un usuario autenticado
+    final current = FirebaseAuth.instance.currentUser;
+    if (current != null) {
+      // Lee su rol en Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(current.uid)
+          .get();
+      if (doc.exists) {
+
+        final data = doc.data() as Map<String, dynamic>;
+        // captura y normaliza ya el rol a String
+        final fetchedRole = (data['rol'] ?? '').toString();
+        print('🔥 AuthWrapper._initialize: fetchedRole = "$fetchedRole"');
+
+        _user = current;
+        _role = fetchedRole;
+      } else {
+        // Si no hay doc de usuario, fuerza logout
+        await FirebaseAuth.instance.signOut();
+      }
+    }
+
+    // Marca como listo para pintar
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  /*@override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const SplashScreen();
     }
     return _user != null ? const ProfileScreen() : const LoginScreen();
-  }
-}
-
-/*class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+  }*/
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen(); // Mostrar splash mientras se carga la autenticación
-        }
-        if (snapshot.hasData) {
-          return const ProfileScreen(); // Si el usuario está autenticado, ir a perfil
-        }
-        return const LoginScreen(); // Si no está autenticado, ir a login
-      },
-    );
-  }
-}*/
+    // 1) siempre entra aquí, incluso con isLoading=true
+    print('🔵 AuthWrapper.build: isLoading=$_isLoading, user=$_user, role=$_role');
 
-// Widget que verifica si el usuario está autenticado o no
-/*class AuthCheck extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasData) {
-          return const ProfileScreen(); // Si el usuario está logueado, va a perfil
-        } else {
-          return const LoginScreen(); // Si no hay usuario, va al login
-        }
-      },
-    );
+    // 2) modo splash  
+    if (_isLoading) {
+      return const SplashScreen();
+    }
+
+    // 3) no autenticado → login  
+    if (_user == null) {
+      print('🔴 AuthWrapper.build: NO user → LoginScreen');
+      return const LoginScreen();
+    }
+
+    // 4) normaliza el rol  
+    final roleNorm = (_role ?? '').toLowerCase().trim();
+    print('🔵 AuthWrapper.build: roleNorm="$roleNorm"');
+
+    // 5) rama GESTOR  
+    if (roleNorm == 'gestor') {
+      print('🟢 AuthWrapper.build: ES GESTOR → UsuariosConEquiposScreen');
+      return const UsuariosConEquiposScreen();
+    }
+
+    // 6) cualquier otro → perfil de estudiante  
+    print('🟡 AuthWrapper.build: NO es gestor → ProfileScreen');
+    return const ProfileScreen();
   }
 }*/

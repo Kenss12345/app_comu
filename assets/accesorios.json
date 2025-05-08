@@ -1,0 +1,173 @@
+[
+  {
+    "N°": "1a",
+    "RECURSO": "Dolly",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Manfrotto",
+    "MODELO": "-",
+    "CARACTERÍSTICAS": "Dolly de ruedas altas con  sistema de fijacion en cada rueda",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "Dolly",
+    "CÓDIGO UC": "ED001532",
+    "MARCA ": "Manfrotto",
+    "MODELO": "-",
+    "CARACTERÍSTICAS": "Dolly de rueds altas con  sistema de fijacion en cada rueda",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "Dolly",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Manfrotto",
+    "MODELO": "-",
+    "CARACTERÍSTICAS": "Dolly con ruedas con sistema de freno incluido en el armazón",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "2a",
+    "RECURSO": "Rebotador",
+    "CÓDIGO UC": "-",
+    "MARCA ": "S/M",
+    "MODELO": "-",
+    "CARACTERÍSTICAS": "Paraguas para difuminar luces",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "3a",
+    "RECURSO": "Rebotador",
+    "CÓDIGO UC": "-",
+    "MARCA ": "FotobeStway",
+    "MODELO": "90 cm",
+    "CARACTERÍSTICAS": "Rebotador 5 en 1 + estuche",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "4a",
+    "RECURSO": "Micrófono",
+    "CÓDIGO UC": "-",
+    "MARCA ": "SHURE",
+    "MODELO": "SM58",
+    "CARACTERÍSTICAS": "Microfonos con cartuchera negra",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "5a",
+    "RECURSO": "Stands para micrófono",
+    "CÓDIGO UC": "-",
+    "MARCA ": "SAMSON",
+    "MODELO": "-",
+    "CARACTERÍSTICAS": "Parante de 1 paso para sujecion de micrófonos alámbricos",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "6a",
+    "RECURSO": "Caña",
+    "CÓDIGO UC": "-",
+    "MARCA ": "RODE",
+    "MODELO": "-",
+    "CARACTERÍSTICAS": "Caña Boom de 5 pasos.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "7a",
+    "RECURSO": "SOPORTE DE LUZ",
+    "CÓDIGO UC": "",
+    "MARCA ": "IMPACT LIGHT",
+    "MODELO": "IMPACT LIGHT",
+    "CARACTERÍSTICAS": "IMPACT LIGHT",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "8a",
+    "RECURSO": "Trípode",
+    "CÓDIGO UC": "ED009512",
+    "MARCA ": "MANFROTTO",
+    "MODELO": "",
+    "CARACTERÍSTICAS": "MANFROTTO, SISTEMA DE TRIPODE COMPLETO 7KG",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "Trípode",
+    "CÓDIGO UC": "ED009512",
+    "MARCA ": "MANFROTTO",
+    "MODELO": "",
+    "CARACTERÍSTICAS": "MANFROTTO, SISTEMA DE TRIPODE COMPLETO 7KG",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "Trípode",
+    "CÓDIGO UC": "ED009512",
+    "MARCA ": "MANFROTTO",
+    "MODELO": "",
+    "CARACTERÍSTICAS": "MANFROTTO, SISTEMA DE TRIPODE COMPLETO 7KG",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "Trípode",
+    "CÓDIGO UC": "ED009512",
+    "MARCA ": "MANFROTTO",
+    "MODELO": "",
+    "CARACTERÍSTICAS": "MANFROTTO, SISTEMA DE TRIPODE COMPLETO 7KG",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "9a",
+    "RECURSO": "LUZ PORTATIL DRACAST CAMLUX PRO",
+    "CÓDIGO UC": "ED009503",
+    "MARCA ": "DRACAST",
+    "MODELO": "DR-CAML",
+    "CARACTERÍSTICAS": "Luz portátil",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "LUZ PORTATIL DRACAST CAMLUX PRO",
+    "CÓDIGO UC": "ED009504",
+    "MARCA ": "DRACAST",
+    "MODELO": "DR-CAML",
+    "CARACTERÍSTICAS": "Luz portátil",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "LUZ PORTATIL DRACAST CAMLUX PRO",
+    "CÓDIGO UC": "ED009505",
+    "MARCA ": "DRACAST",
+    "MODELO": "DR-CAML",
+    "CARACTERÍSTICAS": "Luz portátil",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "LUZ PORTATIL DRACAST CAMLUX PRO",
+    "CÓDIGO UC": "ED009506",
+    "MARCA ": "DRACAST",
+    "MODELO": "DR-CAML",
+    "CARACTERÍSTICAS": "Luz portátil",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "LUZ PORTATIL DRACAST CAMLUX PRO",
+    "CÓDIGO UC": "ED009507",
+    "MARCA ": "DRACAST",
+    "MODELO": "DR-CAML",
+    "CARACTERÍSTICAS": "Luz portátil",
+    "ESTADO": "BUENO"
+  },
+  {
+    "N°": "",
+    "RECURSO": "LUZ PORTATIL DRACAST CAMLUX PRO",
+    "CÓDIGO UC": "ED009508",
+    "MARCA ": "DRACAST",
+    "MODELO": "DR-CAML",
+    "CARACTERÍSTICAS": "Luz portátil",
+    "ESTADO": "BUENO"
+  }
+]

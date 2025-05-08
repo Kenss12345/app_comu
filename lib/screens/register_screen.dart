@@ -1,3 +1,4 @@
+import 'package:app_comu/main.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -64,10 +65,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
 
         // Redirigir a la pantalla de perfil
-        Navigator.pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthWrapper()),
+          (route) => false,
+        );
+
+        /*Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
+        );*/
       }
     } on FirebaseAuthException catch (e) {
       _showError(e.message ?? "Error desconocido");
@@ -76,22 +82,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     setState(() => _isLoading = false);
-
-    /*setState(() => _isLoading = true);
-    try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-      // Si el registro es exitoso, redirige a la pantalla de perfil
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-      );
-    } on FirebaseAuthException catch (e) {
-      _showError(e.message ?? "Error desconocido");
-    }
-    setState(() => _isLoading = false);*/
 
   }
 
@@ -259,64 +249,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
-
-  /*@override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Registro de Usuario")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset('assets/UC.png', width: 100), // Logo
-            const SizedBox(height: 20),
-            const Text(
-              "Crear Cuenta",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Correo Electrónico',
-                prefixIcon: Icon(Icons.email),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Contraseña',
-                prefixIcon: Icon(Icons.lock),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirmar Contraseña',
-                prefixIcon: Icon(Icons.lock_outline),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _register,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Registrarse"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }*/
 }

@@ -1,0 +1,658 @@
+[
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED001513",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led 6 tornillos, 2 manijas de ajuste, 3 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED003751",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "0 tornillos para ajuste de gelatina, 1 manija lateral, 3 botones, tornillo de ajuste, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED003750",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "1 tornillos para ajuste de gelatina, 2 manija lateral, 3 botones, tornillo de ajuste, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED003749",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "0 tornillos para ajuste de gelatina, 2 manija lateral, 3 botones, tornillo de ajuste, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED001558",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos, 2 manijas de ajuste, 3 botones de apagado, tornillo de ajuste a parante,, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED001559",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "0 tornillos para ajuste de gelatina, 2 manija lateral, 3 botones, tornillo de ajuste, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED003752",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "0 tornillos para ajuste de gelatina, 2 manija lateral, 3 botones, tornillo de ajuste, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz Led amarillo",
+    "CÓDIGO UC": "ED001512",
+    "MARCA ": "Flolight",
+    "MODELO": 512,
+    "CARACTERÍSTICAS / ACCESORIOS": "0 tornillos para ajuste de gelatina, 2 manija lateral, 3 botones, tornillo de ajuste, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001557",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001511",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001510",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED003748",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "0 tornillos, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001508",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos para ajuste de gelatina, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001509",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos para ajuste de gelatina, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001551",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos para ajuste de gelatina, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001556",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos para ajuste de gelatina, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz led color amarillo",
+    "CÓDIGO UC": "ED001552",
+    "MARCA ": "Flolight",
+    "MODELO": 1024,
+    "CARACTERÍSTICAS / ACCESORIOS": "6 tornillos para ajuste de gelatina, 2 manijas de ajuste, 5 botones de apagado, tornillo de ajuste a parante, se guarda en un maletin negro con un bolsilo externo.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz de fotografía",
+    "CÓDIGO UC": "ED001523",
+    "MARCA ": "Fotobestway",
+    "MODELO": "SDF - 300",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz con cono de iluminación, y lámpara flash, se almacena en una maleta rectangular con armazón.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz de fotografía",
+    "CÓDIGO UC": "ED001525",
+    "MARCA ": "Fotobestway",
+    "MODELO": "MSF - 250",
+    "CARACTERÍSTICAS / ACCESORIOS": "Lámpara flash con softbox, se almacena en una maleta rectangular con armazón.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz de fotografía",
+    "CÓDIGO UC": "ED001514",
+    "MARCA ": "Fotobestway",
+    "MODELO": "MSF - 250",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz con cono de iluminación, se almacena en una maleta rectangular con armazón.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luz de fotografía",
+    "CÓDIGO UC": "ED009960",
+    "MARCA ": "Fotobestway",
+    "MODELO": "-",
+    "CARACTERÍSTICAS / ACCESORIOS": "Lámpara flash con softbox, se almacena en una maleta rectangular con armazón.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Grabador Externo",
+    "CÓDIGO UC": "ED001659",
+    "MARCA ": "AJA",
+    "MODELO": "KI PRO",
+    "CARACTERÍSTICAS / ACCESORIOS": "Video IN: HDMI, SDI, Analógico | Audio IN: XLR, RCA\nVideo OUT: HDMI, SDI, Analógico, | Audio OUT: XLR, RCA.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Grabador Externo",
+    "CÓDIGO UC": "ED001517",
+    "MARCA ": "AJA",
+    "MODELO": "KI PRO",
+    "CARACTERÍSTICAS / ACCESORIOS": "Video IN: HDMI, SDI, Analógico | Audio IN: XLR, RCA\nVideo OUT: HDMI, SDI, Analógico, | Audio OUT: XLR, RCA.",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Micrófono de mano",
+    "CÓDIGO UC": "-",
+    "MARCA ": "SHURE",
+    "MODELO": "SM 58",
+    "CARACTERÍSTICAS / ACCESORIOS": "Micrófono alámbrico de mano",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MICRÓFONO BOOM",
+    "CÓDIGO UC": "ED004286",
+    "MARCA ": "S/M",
+    "MODELO": "NTG3B PRECISION ",
+    "CARACTERÍSTICAS / ACCESORIOS": "INCLUYE PROTECTOR DE ESPONJA, ACCESORIO DE PARANTE, ESTUCHE DE MÉTAL ",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "VIDEO CÁMARA SONY ",
+    "CÓDIGO UC": "ED004719",
+    "MARCA ": "SONY PXW X70",
+    "MODELO": "XDCAM",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camcorder compacto XDCAM con sensor CMOS Exmor R® tipo 1.0 con objetivo con zoom 12x y grabación XAVC, AVCHD y DV",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "VIDEO CÁMARA SONY ",
+    "CÓDIGO UC": "ED004329",
+    "MARCA ": "SONY PXW X70",
+    "MODELO": "XDCAM",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camcorder compacto XDCAM con sensor CMOS Exmor R® tipo 1.0 con objetivo con zoom 12x y grabación XAVC, AVCHD y DV",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "VIDEO CÁMARA SONY ",
+    "CÓDIGO UC": "ED004718",
+    "MARCA ": "SONY PXW X70",
+    "MODELO": "XDCAM",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camcorder compacto XDCAM con sensor CMOS Exmor R® tipo 1.0 con objetivo con zoom 12x y grabación XAVC, AVCHD y DV",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "VIDEO CÁMARA SONY ",
+    "CÓDIGO UC": "ED006574",
+    "MARCA ": "SONY PXW X70",
+    "MODELO": "XDCAM",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camcorder compacto XDCAM con sensor CMOS Exmor R® tipo 1.0 con objetivo con zoom 12x y grabación XAVC, AVCHD y DV",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "VIDEO CÁMARA SONY ",
+    "CÓDIGO UC": "ED006575",
+    "MARCA ": "SONY PXW X70",
+    "MODELO": "XDCAM",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camcorder compacto XDCAM con sensor CMOS Exmor R® tipo 1.0 con objetivo con zoom 12x y grabación XAVC, AVCHD y DV",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "VIDEO CÁMARA SONY ",
+    "CÓDIGO UC": "ED006576",
+    "MARCA ": "SONY PXW X70",
+    "MODELO": "XDCAM",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camcorder compacto XDCAM con sensor CMOS Exmor R® tipo 1.0 con objetivo con zoom 12x y grabación XAVC, AVCHD y DV",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "VIDEO CÁMARA SONY ",
+    "CÓDIGO UC": "ED006577",
+    "MARCA ": "SONY PXW X70",
+    "MODELO": "XDCAM",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camcorder compacto XDCAM con sensor CMOS Exmor R® tipo 1.0 con objetivo con zoom 12x y grabación XAVC, AVCHD y DV",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MICROFONO SONY",
+    "CÓDIGO UC": "ED007421",
+    "MARCA ": "SONY CONDENSADOR",
+    "MODELO": "ECM-VG1",
+    "CARACTERÍSTICAS / ACCESORIOS": "Micrófono de condensador electret de cañón",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MICROFONO SONY",
+    "CÓDIGO UC": "ED007419",
+    "MARCA ": "SONY CONDENSADOR",
+    "MODELO": "ECM-VG1",
+    "CARACTERÍSTICAS / ACCESORIOS": "Micrófono de condensador electret de cañón",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MICROFONO SONY",
+    "CÓDIGO UC": "ED007420",
+    "MARCA ": "SONY CONDENSADOR",
+    "MODELO": "ECM-VG1",
+    "CARACTERÍSTICAS / ACCESORIOS": "Micrófono de condensador electret de cañón",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MICROFONO SONY",
+    "CÓDIGO UC": "ED010616",
+    "MARCA ": "SONY CONDENSADOR",
+    "MODELO": "ECM-VG1",
+    "CARACTERÍSTICAS / ACCESORIOS": "Micrófono de condensador electret de cañón",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MONOPODO",
+    "CÓDIGO UC": "ED 004722",
+    "MARCA ": "MANFROTTO",
+    "MODELO": "560B-1",
+    "CARACTERÍSTICAS / ACCESORIOS": "Monopodo desplegable en tres cuerpos con zapata ",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED004441",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T5I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED004442",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T5I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED004443",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T5I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED004444",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T5I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED004445",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T5I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED004446",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T5I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED006571",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T7I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED006572",
+    "MARCA ": "CANON EOS REBEL",
+    "MODELO": "T7I",
+    "CARACTERÍSTICAS / ACCESORIOS": "Bateria y cargador",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MÁQUINA FOTOGRAFICA",
+    "CÓDIGO UC": "ED100670",
+    "MARCA ": "NIKON",
+    "MODELO": "D90",
+    "CARACTERÍSTICAS / ACCESORIOS": "Camara fotográfica con lente teleobjetivo color negro, sin tapa , ni memoria ",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": " Micrófono pechero inalámbrico",
+    "CÓDIGO UC": "",
+    "MARCA ": "SENNHEISER",
+    "MODELO": " EW 100 ENG G4-B ",
+    "CARACTERÍSTICAS / ACCESORIOS": "Emeisor, receptor y cable micro",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": " Micrófono pechero inalámbrico",
+    "CÓDIGO UC": "",
+    "MARCA ": "SENNHEISER",
+    "MODELO": " EW 100 ENG G4-B ",
+    "CARACTERÍSTICAS / ACCESORIOS": "Emeisor, receptor y cable micro",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": " Micrófono pechero inalámbrico",
+    "CÓDIGO UC": "",
+    "MARCA ": "SENNHEISER",
+    "MODELO": " EW 100 ENG G4-B ",
+    "CARACTERÍSTICAS / ACCESORIOS": "Emeisor, receptor y cable micro",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": " Micrófono pechero inalámbrico",
+    "CÓDIGO UC": "",
+    "MARCA ": "SENNHEISER",
+    "MODELO": " EW 100 ENG G4-B ",
+    "CARACTERÍSTICAS / ACCESORIOS": "Emeisor, receptor y cable micro",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Microfono ",
+    "CÓDIGO UC": "-",
+    "MARCA ": "RODE",
+    "MODELO": "NTG3B",
+    "CARACTERÍSTICAS / ACCESORIOS": "micro para boom",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "ESTABILIZADOR DE CARDAN MOTORIZADO",
+    "CÓDIGO UC": "ED009516",
+    "MARCA ": "DJI RONIN-S- ",
+    "MODELO": "Mod  Rd18",
+    "CARACTERÍSTICAS / ACCESORIOS": "-",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "ESTABILIZADOR DE CARDAN MOTORIZADO",
+    "CÓDIGO UC": "ED009517",
+    "MARCA ": "DJI RONIN-S- ",
+    "MODELO": "Mod  Rd18",
+    "CARACTERÍSTICAS / ACCESORIOS": "-",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "MONITOR 4K DE 7 PULGADAS ALTO BRILLO EN LA CÁMARA CON 3D LUT",
+    "CÓDIGO UC": "ED009499",
+    "MARCA ": "IKAN",
+    "MODELO": "DH7-V2",
+    "CARACTERÍSTICAS / ACCESORIOS": "-",
+    "ESTADO": "BUENO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101887",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101888",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101889",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101890",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101891",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101892",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101893",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Luces Fresnel LED",
+    "CÓDIGO UC": "ED101894",
+    "MARCA ": "GODOX",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Luz led GODOX SL60IID - SL60W versión II - Luz blanca",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Micrófonos Compactos RØDE para cámara",
+    "CÓDIGO UC": "",
+    "MARCA ": "Rode",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Micrófonos Compactos RØDE para cámara",
+    "CÓDIGO UC": "",
+    "MARCA ": "Rode",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Micrófonos Compactos RØDE para cámara",
+    "CÓDIGO UC": "",
+    "MARCA ": "Rode",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Micrófonos Inalámbricos RØDE",
+    "CÓDIGO UC": "ED101709",
+    "MARCA ": "Rode",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Rode Wireless Pro Sistema Inalámbrico Digital Portátil",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Micrófonos Inalámbricos RØDE",
+    "CÓDIGO UC": "ED101708",
+    "MARCA ": "Rode",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Rode Wireless Pro Sistema Inalámbrico Digital Portátil",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Micrófonos Inalámbricos RØDE",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Rode",
+    "MODELO": "",
+    "CARACTERÍSTICAS / ACCESORIOS": "Rode Wireless Pro Sistema Inalámbrico Digital Portátil",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Maletines para Equipo de Video y Foto",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Lowepro",
+    "MODELO": "BP300 awIII",
+    "CARACTERÍSTICAS / ACCESORIOS": "Tipo: Mochila\nMaterial principal: Materiales exteriores : Poliéster 600D , poliéster antidesgarro 600D\nColor: Dark Grey\nCompatibilidad: Se adapta a Mirrorless con lente de 70-200 mm más 3-4 lentes adicionales\nCompartimientos: 2\nCaracterísticas extras: Bolsillo para laptop de 13\"\n¿Qué incluye en la caja?: Mochila\nModelo: Flipside 300 AW III\nAlto: 45 / Ancho: 30 / Profundidad: 21\nPeso: 1,4",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Maletines para Equipo de Video y Foto",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Lowepro",
+    "MODELO": "BP300 awIII",
+    "CARACTERÍSTICAS / ACCESORIOS": "Tipo: Mochila\nMaterial principal: Materiales exteriores : Poliéster 600D , poliéster antidesgarro 600D\nColor: Dark Grey\nCompatibilidad: Se adapta a Mirrorless con lente de 70-200 mm más 3-4 lentes adicionales\nCompartimientos: 2\nCaracterísticas extras: Bolsillo para laptop de 13\"\n¿Qué incluye en la caja?: Mochila\nModelo: Flipside 300 AW III\nAlto: 45 / Ancho: 30 / Profundidad: 21\nPeso: 1,5",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Maletines para Equipo de Video y Foto",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Lowepro",
+    "MODELO": "BP300 awIII",
+    "CARACTERÍSTICAS / ACCESORIOS": "Tipo: Mochila\nMaterial principal: Materiales exteriores : Poliéster 600D , poliéster antidesgarro 600D\nColor: Dark Grey\nCompatibilidad: Se adapta a Mirrorless con lente de 70-200 mm más 3-4 lentes adicionales\nCompartimientos: 2\nCaracterísticas extras: Bolsillo para laptop de 13\"\n¿Qué incluye en la caja?: Mochila\nModelo: Flipside 300 AW III\nAlto: 45 / Ancho: 30 / Profundidad: 21\nPeso: 1,6",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Maletines para Equipo de Video y Foto",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Lowepro",
+    "MODELO": "BP300 awIII",
+    "CARACTERÍSTICAS / ACCESORIOS": "Tipo: Mochila\nMaterial principal: Materiales exteriores : Poliéster 600D , poliéster antidesgarro 600D\nColor: Dark Grey\nCompatibilidad: Se adapta a Mirrorless con lente de 70-200 mm más 3-4 lentes adicionales\nCompartimientos: 2\nCaracterísticas extras: Bolsillo para laptop de 13\"\n¿Qué incluye en la caja?: Mochila\nModelo: Flipside 300 AW III\nAlto: 45 / Ancho: 30 / Profundidad: 21\nPeso: 1,7",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Maletines para Equipo de Video y Foto",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Lowepro",
+    "MODELO": "BP300 awIII",
+    "CARACTERÍSTICAS / ACCESORIOS": "Tipo: Mochila\nMaterial principal: Materiales exteriores : Poliéster 600D , poliéster antidesgarro 600D\nColor: Dark Grey\nCompatibilidad: Se adapta a Mirrorless con lente de 70-200 mm más 3-4 lentes adicionales\nCompartimientos: 2\nCaracterísticas extras: Bolsillo para laptop de 13\"\n¿Qué incluye en la caja?: Mochila\nModelo: Flipside 300 AW III\nAlto: 45 / Ancho: 30 / Profundidad: 21\nPeso: 1,8",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Maletines para Equipo de Video y Foto",
+    "CÓDIGO UC": "-",
+    "MARCA ": "Lowepro",
+    "MODELO": "BP300 awIII",
+    "CARACTERÍSTICAS / ACCESORIOS": "Tipo: Mochila\nMaterial principal: Materiales exteriores : Poliéster 600D , poliéster antidesgarro 600D\nColor: Dark Grey\nCompatibilidad: Se adapta a Mirrorless con lente de 70-200 mm más 3-4 lentes adicionales\nCompartimientos: 2\nCaracterísticas extras: Bolsillo para laptop de 13\"\n¿Qué incluye en la caja?: Mochila\nModelo: Flipside 300 AW III\nAlto: 45 / Ancho: 30 / Profundidad: 21\nPeso: 1,9",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101913",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R50",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101914",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R51",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101915",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R52",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101916",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R53",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101917",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R54",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101918",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R55",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101919",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R56",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  },
+  {
+    "RECURSO": "Cámara fotofgráfica R50",
+    "CÓDIGO UC": "ED101920",
+    "MARCA ": "CANON",
+    "MODELO": "Canon EOS R57",
+    "CARACTERÍSTICAS / ACCESORIOS": "Cámara híbrida APS-C\nSensor CMOS de 24,2 megapíxeles\nProcesador DIGIC X\n15 fotos por segundo en JPG o HEIG\nEnfoque automático Dual Pixel II: detección de personas, animales y vehículos\n651 zonas AF autoseleccionables\nEnfoque con poca luz hasta -4 EV\nArchivos RAW de 14 bits y HEIF de 10 bits\nModo ráfaga hasta 15 fps (obturador electrónico), hasta 12 fps (obturador mecánico)\nISO 32.000 (ampliable a ISO 51.200)\nVídeo 4K 30p 10 bits / Full HD 120 fps\nOpciones panorámicas\nSin límite de grabación de 30 minutos\nVisor electrónico OLED\nWi-Fi y Bluetooth\nUVC para transmisión\nJack 3.5, mini HDMI y zapata inteligente para enriquecer el contenido\nTransmisión en directo de YouTube a través de image.canon (salida HDMI 4K/FHD 60p)\nObjetivos intercambiables: montura RF o montura EF/EF-S (mediante anillo adaptador)",
+    "ESTADO": "NUEVO"
+  }
+]
