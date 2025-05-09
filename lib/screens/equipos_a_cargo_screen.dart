@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:app_comu/utils/carrito_equipos.dart';
@@ -16,11 +17,49 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   //bool solicitando = false;
   bool solicitudRealizada = false;
 
-  void _eliminarEquipo(int index) {
-    setState(() {
-      CarritoEquipos().eliminarEquipo(index);
-    });
+  void _eliminarEquipo(int index) async {
+    final equipo = equiposACargo[index];
+    final equipoId = equipo['id'];
+
+    try {
+      // Transacción para cambiar el estado a "Disponible" en Firestore
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final equipoDocRef = FirebaseFirestore.instance.collection('equipos').doc(equipoId);
+        final snapshot = await transaction.get(equipoDocRef);
+
+        if (!snapshot.exists) {
+          throw Exception("El equipo ya no existe en Firestore.");
+        }
+
+        final data = snapshot.data() as Map<String, dynamic>;
+        final estadoActual = data['estado'];
+
+        // Solo permite cambiar si el estado es "Pendiente"
+        if (estadoActual != "Pendiente") {
+          throw Exception("El equipo no está en estado 'Pendiente'.");
+        }
+
+        // Actualiza el estado a "Disponible"
+        transaction.update(equipoDocRef, {
+          'estado': 'Disponible',
+        });
+      });
+
+      // Si la transacción fue exitosa, lo eliminamos del carrito local
+      setState(() {
+        CarritoEquipos().eliminarEquipo(index);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al eliminar: ${e.toString()}")),
+      );
+    }
   }
+
 
   Future<void> _navegarYSolicitarEquipos() async {
     final resultado = await Navigator.pushNamed(context, '/solicitud_equipos');

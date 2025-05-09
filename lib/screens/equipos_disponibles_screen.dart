@@ -74,7 +74,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   });
 }
 
-  void _anadirAEquiposACargo(Map<String, dynamic> equipo) {
+  /*void _anadirAEquiposACargo(Map<String, dynamic> equipo) {
   final DateTime ahora = DateTime.now();
   final DateTime devolucion = ahora.add(Duration(days: 2));
 
@@ -92,7 +92,64 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text("${equipo["nombre"]} añadido a equipos a cargo.")),
   );
-}
+}*/
+
+  void _anadirAEquiposACargo(Map<String, dynamic> equipo) async {
+    final equipoId = equipo['id'];
+
+    try {
+      // Inicia una transacción
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        // Obtén el documento del equipo dentro de la transacción
+        final equipoDocRef = FirebaseFirestore.instance.collection('equipos').doc(equipoId);
+        final snapshot = await transaction.get(equipoDocRef);
+
+        if (!snapshot.exists) {
+          throw Exception("El equipo ya no está disponible.");
+        }
+
+        final data = snapshot.data() as Map<String, dynamic>;
+        final estadoActual = data['estado'];
+
+        // Verifica si el equipo aún está disponible
+        if (estadoActual != "Disponible") {
+          throw Exception("El equipo ya no está disponible.");
+        }
+
+        // Cambia el estado a "Pendiente" y añade el timestamp
+        transaction.update(equipoDocRef, {
+          'estado': 'Pendiente',
+          'timestamp_solicitud': FieldValue.serverTimestamp(), // Marca el momento de la solicitud
+        });
+      });
+
+      // Si la transacción fue exitosa, añade el equipo a equipos a cargo
+      final DateTime ahora = DateTime.now();
+      final DateTime devolucion = ahora.add(Duration(days: 2));
+
+      final equipoConFechas = {
+        ...equipo,
+        "fecha_prestamo": ahora.toString().split(' ')[0],
+        "fecha_devolucion": devolucion.toString().split(' ')[0],
+        "estado_prestamo": "Pendiente",
+        "imagen": equipo['imagenes'].isNotEmpty ? equipo['imagenes'][0] : "",
+      };
+
+      CarritoEquipos().agregarEquipo(equipoConFechas);
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${equipo["nombre"]} añadido a equipos a cargo.")),
+      );
+    } catch (e) {
+      // Si ocurre un error (por ejemplo, equipo ya en uso)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
+      );
+    }
+    _loadEquiposDesdeFirestore();
+  }
+
 
   void _mostrarDetalles(BuildContext context, Map<String, dynamic> equipo) {
     showModalBottomSheet(

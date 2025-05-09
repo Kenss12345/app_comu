@@ -118,27 +118,32 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
 
   Future<void> _enviarCorreoConfirmacion(String destinatario, List<Map<String, dynamic>> equipos) async {
     // Usa tu correo institucional o de servicio habilitado para SMTP
-    String username = '72195486@continental.edu.pe';
-    String password = 'tkqttcarvdixwzf';
+    String username = 'kenss12345@gmail.com';
+    String password = 'qsex cejw glnq namr';
 
     final smtpServer = gmail(username, password);
 
+    // Construye el contenido de los equipos solicitados
     String contenidoEquipos = equipos.map((e) => "- ${e['nombre']} (${e['estado_prestamo']})").join("\n");
 
+    // Construye el contenido del mensaje
     final message = Message()
       ..from = Address(username, 'Soporte Audiovisual')
-      //..recipients.add(destinatario)
-      ..recipients.add('kenss12345@gmail.com') // para pruebas
+      ..recipients.add(destinatario)
       ..subject = 'Confirmación de solicitud de préstamo'
       ..text = '''
-  Hola $nombreUsuario,
+    Hola $nombreUsuario,
 
-  Tu solicitud de préstamo ha sido registrada con éxito.
+    Tu solicitud de préstamo ha sido registrada con éxito.
 
-  Detalles de tu solicitud:
-  - Fecha de entrega: $fechaPrestamo
-  - Fecha de devolución: $fechaDevolucion
-  - Hora de salida: ${horaSalidaController.text}
+    Detalles de tu solicitud:
+    - Fecha de entrega: $fechaPrestamo
+    - Fecha de devolución: $fechaDevolucion
+    - Hora de salida: ${horaSalidaController.text}
+    - Lugar de Trabajo: ${lugarController.text}
+    - Asignatura: ${asignaturaController.text}
+    - Trabajo a Realizar: ${trabajoController.text}
+    - Docente a Cargo: ${docenteController.text}
 
   Equipos solicitados:
   $contenidoEquipos
@@ -158,104 +163,124 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text("Solicitud de Equipo"),
-      backgroundColor: Colors.orange,
-    ),
-    body: isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionCard(
-                      title: "Datos del Estudiante",
-                      children: [
-                        _buildTextField(label: "Nombre", initialValue: nombreUsuario, enabled: false),
-                        _buildTextField(label: "DNI", initialValue: dniUsuario, enabled: false),
-                        _buildTextField(label: "Celular", initialValue: celularUsuario, enabled: false),
-                        _buildTextField(label: "Email", initialValue: emailUsuario, enabled: false),
-                        _buildTextField(label: "Tipo de Usuario", initialValue: tipoUsuario, enabled: false),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildSectionCard(
-                      title: "Detalles de la Solicitud",
-                      children: [
-                        _buildTextField(label: "Asignatura", controller: asignaturaController),
-                        _buildTextField(label: "Trabajo a Realizar", controller: trabajoController),
-                        _buildTextField(label: "Docente a Cargo", controller: docenteController),
-                        _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text("Entrega: $fechaPrestamo", style: TextStyle(fontSize: 16)),
-                              Text("Devolución: $fechaDevolucion", style: TextStyle(fontSize: 16)),
-                            ],
-                          ),
-                        ),
-                        _buildTextField(label: "Hora de Salida del Equipo", controller: horaSalidaController),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildSectionCard(
-                      title: "Equipos Seleccionados",
-                      children: equiposSeleccionados.map((equipo) {
-                        return Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: ListTile(
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(equipo["imagen"], width: 50, height: 50, fit: BoxFit.cover),
-                            ),
-                            title: Text(equipo["nombre"]),
-                            subtitle: Text("Estado: ${equipo["estado_prestamo"]}"),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            _enviarSolicitud();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text("Enviar Solicitud", style: TextStyle(fontSize: 16, color: Colors.white)),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Solicitud de Equipo"),
+        backgroundColor: Colors.orange,
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionCard(
+                        title: "Datos del Estudiante",
+                        children: [
+                          _buildTextField(label: "Nombre", initialValue: nombreUsuario, enabled: false),
+                          _buildTextField(label: "DNI", initialValue: dniUsuario, enabled: false),
+                          _buildTextField(label: "Celular", initialValue: celularUsuario, enabled: false),
+                          _buildTextField(label: "Email", initialValue: emailUsuario, enabled: false),
+                          _buildTextField(label: "Tipo de Usuario", initialValue: tipoUsuario, enabled: false),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                      const SizedBox(height: 12),
+                      _buildSectionCard(
+                        title: "Detalles de la Solicitud",
+                        children: [
+                          _buildTextField(label: "Asignatura", controller: asignaturaController),
+                          _buildTextField(label: "Trabajo a Realizar", controller: trabajoController),
+                          _buildTextField(label: "Docente a Cargo", controller: docenteController),
+                          _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Entrega: $fechaPrestamo", style: TextStyle(fontSize: 16)),
+                                SizedBox(height: 4),
+                                Text("Devolución: $fechaDevolucion", style: TextStyle(fontSize: 16)),
+                              ],
+                            ),
+                          ),
+                          _buildTextField(
+                            label: "Hora de Salida del Equipo",
+                            controller: horaSalidaController,
+                            enabled: true,
+                            onTap: () async {
+                              final timeOfDay = await showTimePicker(
+                                context: context,
+                                initialTime: TimeOfDay.now(),
+                              );
+
+                              if (timeOfDay != null) {
+                                final formattedTime = timeOfDay.format(context);
+                                setState(() {
+                                  horaSalidaController.text = formattedTime;
+                                });
+                              }
+                            },
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildSectionCard(
+                        title: "Equipos Seleccionados",
+                        children: equiposSeleccionados.map((equipo) {
+                          return Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(equipo["imagen"], width: 50, height: 50, fit: BoxFit.cover),
+                              ),
+                              title: Text(equipo["nombre"]),
+                              subtitle: Text("Estado: ${equipo["estado_prestamo"]}"),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              _enviarSolicitud();
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text("Enviar Solicitud", style: TextStyle(fontSize: 16, color: Colors.white)),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-  );
-}
+    );
+  }
 
   // Método reutilizable para construir los campos de entrada
-  Widget _buildTextField({required String label, TextEditingController? controller, String? initialValue, bool enabled = true}) {
+  Widget _buildTextField({required String label, TextEditingController? controller, String? initialValue, bool enabled = true, VoidCallback? onTap,}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
         initialValue: initialValue,
         enabled: enabled,
+        readOnly: onTap != null,
+        onTap: onTap,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(),
