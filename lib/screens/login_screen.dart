@@ -200,6 +200,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!userDoc.exists) {
         await _mostrarFormularioDatosAdicionales(user);
+
+        // Espera activa hasta que se cree el documento en Firestore
+        DocumentSnapshot nuevoDoc;
+        int intentos = 0;
+        do {
+          await Future.delayed(const Duration(milliseconds: 300));
+          nuevoDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+          intentos++;
+        } while (!nuevoDoc.exists && intentos < 10);
+
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthWrapper()),
+          (route) => false,
+        );
+
         return; // Esperamos que el registro se complete desde el modal
       }
 
@@ -208,6 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const ProfileScreen()),
       );*/
+      
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const AuthWrapper()),

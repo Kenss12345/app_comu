@@ -9,6 +9,7 @@ import 'screens/usuarios_con_equipos_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/completar_datos_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,9 +68,8 @@ class AuthWrapper extends StatelessWidget {
               return const SplashScreen();   // Espera rol
             }
             if (!userSnap.hasData || !userSnap.data!.exists) {
-              // Si no existe doc de usuario, forzar logout
-              FirebaseAuth.instance.signOut();
-              return const LoginScreen();
+              // Si no existe doc de usuario, ir a la pantalla temporal completar datos
+              return CompletarDatosScreen(user: user!);
             }
             final role = (userSnap.data!['rol'] as String).toLowerCase().trim();
             if (role == 'gestor') {
