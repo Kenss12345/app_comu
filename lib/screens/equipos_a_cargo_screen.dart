@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:app_comu/utils/carrito_equipos.dart';
@@ -12,14 +13,51 @@ class EquiposACargoScreen extends StatefulWidget {
 
 class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   
-  List<Map<String, dynamic>> get equiposACargo => CarritoEquipos().equipos;
+  //List<Map<String, dynamic>> get equiposACargo => CarritoEquipos().equipos;
+  List<Map<String, dynamic>> equiposACargo = [];
+  bool _cargando = true;
 
   //bool solicitando = false;
   bool solicitudRealizada = false;
 
+  bool haySolicitudPendiente = false;
+  bool hayEquiposEnUso = false;
+
+  //cargar desde Firestore:
+  Future<void> _cargarEquiposDesdeFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('equipos_a_cargo')
+          .get();
+      
+      final equipos = snapshot.docs.map((doc) => doc.data()).cast<Map<String, dynamic>>().toList();
+
+      bool solicitudPendiente = await _tieneSolicitudPendiente();
+      bool enUso = equipos.any((e) => (e['estado_prestamo'] ?? "").toLowerCase() == "en uso");
+
+      setState(() {
+        equiposACargo = equipos;
+        haySolicitudPendiente = solicitudPendiente;
+        hayEquiposEnUso = enUso;
+        _cargando = false;
+      });
+    } else {
+      setState(() {
+        equiposACargo = [];
+        haySolicitudPendiente = false;
+        hayEquiposEnUso = false;
+        _cargando = false;
+      });
+    }
+  }
+
   void _eliminarEquipo(int index) async {
     final equipo = equiposACargo[index];
     final equipoId = equipo['id'];
+    final user = FirebaseAuth.instance.currentUser;
 
     try {
       // Transacción para cambiar el estado a "Disponible" en Firestore
@@ -53,6 +91,26 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
       );
+
+      // Elimina del Firestore del usuario
+      if (user != null) {
+        await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('equipos_a_cargo')
+          .doc(equipoId)
+          .delete();
+      }
+
+      // Elimina de la lista local
+      setState(() {
+        equiposACargo.removeAt(index);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
+      );
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error al eliminar: ${e.toString()}")),
@@ -60,13 +118,22 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
     }
   }
 
+  Future<bool> _tieneSolicitudPendiente() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+    // Busca una solicitud en la colección 'solicitudes' donde uid sea igual al del usuario actual
+    final snapshot = await FirebaseFirestore.instance
+        .collection('solicitudes')
+        .where('uid', isEqualTo: user.uid)
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
 
   Future<void> _navegarYSolicitarEquipos() async {
     final resultado = await Navigator.pushNamed(context, '/solicitud_equipos');
-
-    // Si se envió la solicitud, refrescar pantalla
     if (resultado == true) {
-      setState(() {});
+      await _cargarEquiposDesdeFirestore();
     }
   }
 
@@ -75,7 +142,18 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _cargarEquiposDesdeFirestore();
+  }
+
+  @override
   Widget build(BuildContext context) {
+
+    if (_cargando) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     final hayEquiposEnUso = _hayEquiposEnUso();
 
     return Scaffold(
@@ -166,17 +244,19 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                             ],
                           ),
                         ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.redAccent),
-                          onPressed: () => _eliminarEquipo(index),
-                        ),
+                        trailing: (!haySolicitudPendiente && !hayEquiposEnUso)
+                          ? IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.redAccent),
+                              onPressed: () => _eliminarEquipo(index),
+                            )
+                          : null,
                       ),
                     );
                   },
                 ),
               ),
             const SizedBox(height: 20),
-            if (equiposACargo.isNotEmpty && !solicitudRealizada && !hayEquiposEnUso)
+            if (equiposACargo.isNotEmpty && !haySolicitudPendiente && !hayEquiposEnUso)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -190,6 +270,17 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                  ),
+                ),
+              )
+            else if (haySolicitudPendiente)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  "⏳ Tu solicitud está en espera de confirmación.",
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               )

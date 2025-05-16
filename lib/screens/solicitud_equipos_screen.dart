@@ -103,10 +103,10 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           //CarritoEquipos().limpiarCarrito();
 
           // Cambiar estado de cada equipo a "en uso"
-          final carrito = CarritoEquipos();
+          /*final carrito = CarritoEquipos();
           for (int i = 0; i < carrito.equipos.length; i++) {
             carrito.equipos[i]["estado_prestamo"] = "en uso";
-          }
+          }*/
 
           // Solo muestra el mensaje de éxito cuando todo termina
           if (mounted) {

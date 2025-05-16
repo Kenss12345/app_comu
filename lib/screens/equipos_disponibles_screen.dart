@@ -136,6 +136,18 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       };
 
       CarritoEquipos().agregarEquipo(equipoConFechas);
+
+      // Guardar equipo en firestore
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('equipos_a_cargo')
+          .doc(equipo['id'])
+          .set(equipoConFechas);
+      }
+
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(

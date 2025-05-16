@@ -447,10 +447,24 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
     // Ahora gestiona la solicitud
     final equipos = solicitud['equipos'] as List;
+    final uidSolicitante = solicitud['uid'] as String;
+
     for (var equipo in equipos) {
+      // Cambia el estado global
       await FirebaseFirestore.instance.collection('equipos').doc(equipo['id']).update({
         'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
       });
+
+      // Cambia el estado en la subcolección del usuario
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(uidSolicitante)
+          .collection('equipos_a_cargo')
+          .doc(equipo['id'])
+          .update({
+        'estado_prestamo': accion == "Aceptada" ? "En Uso" : "Disponible",
+      });
+
     }
 
     await solicitud.reference.delete(); // Elimina la solicitud
