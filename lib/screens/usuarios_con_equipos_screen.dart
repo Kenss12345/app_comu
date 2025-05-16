@@ -455,17 +455,22 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
       });
 
-      // Cambia el estado en la subcolección del usuario
-      await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(uidSolicitante)
-          .collection('equipos_a_cargo')
-          .doc(equipo['id'])
-          .update({
-        'estado_prestamo': accion == "Aceptada" ? "En Uso" : "Disponible",
-      });
+      final docRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(uidSolicitante)
+        .collection('equipos_a_cargo')
+        .doc(equipo['id']);
 
+      if (accion == "Aceptada") {
+      // Cambia el estado en la subcolección del usuario a "En uso"
+      await docRef.update({
+        'estado_prestamo': "En uso",
+      });
+    } else if (accion == "Rechazada") {
+      // Puedes eliminar el documento de la subcolección o actualizar a Disponible
+      await docRef.delete();
     }
+  }
 
     await solicitud.reference.delete(); // Elimina la solicitud
 
