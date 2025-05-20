@@ -33,13 +33,13 @@ Esta aplicación permite a los estudiantes solicitar el préstamo de equipos (y 
 ```
 
 ├── lib/
-│   ├── screens/           # Todas las pantallas principales
-│   ├── utils/             # Funciones y clases utilitarias
+│   ├── screens/                # Todas las pantallas principales
+│   ├── utils/                  # Funciones y clases utilitarias
 │   ├── firebase\_options.dart  # Configuración de Firebase
-│   └── main.dart          # Entry point
-├── android/               # Proyecto nativo Android
-├── ios/                   # Proyecto nativo iOS
-├── pubspec.yaml           # Dependencias
+│   └── main.dart               # Entry point
+├── android/                    # Proyecto nativo Android
+├── ios/                        # Proyecto nativo iOS
+├── pubspec.yaml                # Dependencias
 └── README.md
 
 ````
@@ -52,13 +52,11 @@ Esta aplicación permite a los estudiantes solicitar el préstamo de equipos (y 
    ```sh
    git clone https://github.com/Kenss12345/app_comu.git
    cd appcomu
-````
 
 2. **Instala las dependencias**
 
    ```sh
    flutter pub get
-   ```
 
 3. **Configura Firebase**
 
@@ -69,7 +67,6 @@ Esta aplicación permite a los estudiantes solicitar el préstamo de equipos (y 
 
    ```sh
    flutter run
-   ```
 
 ---
 
