@@ -27,6 +27,7 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   String emailUsuario = "";
   String fechaPrestamo = "";
   String fechaDevolucion = "";
+  String? trabajoSeleccionado = 'Trabajo a realizar 1';
   bool isLoading = true;
   bool _enviando = false;
 
@@ -43,15 +44,24 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   void initState() {
     super.initState();
     _cargarDatosUsuario();
-    _calcularFechas();
+    _ajustarFechasPorTrabajo(trabajoSeleccionado ?? trabajos.first['nombre']);
   }
 
-  void _calcularFechas() {
-    final hoy = DateTime.now();
-    final dosDiasDespues = hoy.add(Duration(days: 2));
-    final format = DateFormat('dd/MM/yyyy');
-    fechaPrestamo = format.format(hoy);
-    fechaDevolucion = format.format(dosDiasDespues);
+  void _ajustarFechasPorTrabajo(String? trabajoNombre) {
+    final trabajo = trabajos.firstWhere((t) => t['nombre'] == trabajoNombre);
+    final ahora = DateTime.now();
+    final duracion = trabajo['duracion'] as Duration;
+    final fechaDevolucionDT = ahora.add(duracion);
+
+    final format = DateFormat('dd/MM/yyyy HH:mm');
+    fechaPrestamo = format.format(ahora);
+
+    if (duracion.inHours < 24) {
+      fechaDevolucion = format.format(fechaDevolucionDT);
+    } else {
+      final formatDay = DateFormat('dd/MM/yyyy');
+      fechaDevolucion = formatDay.format(fechaDevolucionDT);
+    }
   }
 
   Future<void> _cargarDatosUsuario() async {
@@ -73,6 +83,11 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
 
   Future<void> _enviarSolicitud() async {
     setState(() => _enviando = true);
+
+      if (trabajoSeleccionado != null) {
+        _ajustarFechasPorTrabajo(trabajoSeleccionado);
+      }
+
   
       try {
         User? user = FirebaseAuth.instance.currentUser;
@@ -173,6 +188,25 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     }
   }
 
+  final List<Map<String, dynamic>> trabajos = [
+    {
+      'nombre': 'Trabajo a realizar 1',
+      'duracion': Duration(days: 2), // 2 días
+    },
+    {
+      'nombre': 'Trabajo a realizar 2',
+      'duracion': Duration(hours: 5), // 5 horas
+    },
+    {
+      'nombre': 'Trabajo a realizar 3',
+      'duracion': Duration(days: 1), // 1 día
+    },
+    {
+      'nombre': 'Trabajo a realizar 4',
+      'duracion': Duration(days: 5), // 5 días
+    },
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -210,7 +244,37 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
                             title: "Detalles de la Solicitud",
                             children: [
                               _buildTextField(label: "Asignatura", controller: asignaturaController),
-                              _buildTextField(label: "Trabajo a Realizar", controller: trabajoController),
+
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: DropdownButtonFormField<String>(
+                                  value: trabajoSeleccionado,
+                                  decoration: const InputDecoration(
+                                    labelText: "Trabajo a Realizar",
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  items: trabajos.map((t) {
+                                    return DropdownMenuItem<String>(
+                                      value: t['nombre'] as String,
+                                      child: Text(t['nombre'] as String),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      trabajoSeleccionado = value;
+                                      _ajustarFechasPorTrabajo(value);
+                                      trabajoController.text = value ?? "";
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "Selecciona el trabajo a realizar";
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+
                               _buildTextField(label: "Docente a Cargo", controller: docenteController),
                               _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
                               Padding(
