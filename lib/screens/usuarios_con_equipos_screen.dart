@@ -28,25 +28,46 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   Future<void> obtenerUsuarios() async {
-    final snapshot = await FirebaseFirestore.instance
+
+     // 1. Obtener todos los usuarios
+    final usuariosSnap = await FirebaseFirestore.instance.collection('usuarios').get();
+
+    List<Map<String, dynamic>> lista = [];
+
+    for (final doc in usuariosSnap.docs) {
+      // 2. Busca equipos en uso para cada usuario
+      final equiposACargoSnap = await FirebaseFirestore.instance
         .collection('usuarios')
-        .where('TieneEquipo', isEqualTo: true)
+        .doc(doc.id)
+        .collection('equipos_a_cargo')
+        .where('estado_prestamo', isEqualTo: "En uso")
         .get();
 
-    final lista = snapshot.docs.map((doc) {
-      final data = doc.data();
-      final tiempoRestante = calcularTiempoRestante(data['fechaDevolucion']);
-      return {
-        'id': doc.id,
-        'nombre': data['nombre'],
-        'email': data['email'],
-        'celular': data['celular'],
-        'equipo': data['equipo'] ?? 'Equipo no registrado',
-        'tiempo_restante': tiempoRestante,
-        'fechaDevolucion': data['fechaDevolucion'],
-      };
-    }).toList();
-
+      if (equiposACargoSnap.docs.isNotEmpty) {
+        final data = doc.data();
+        // Para simplificar, solo muestra el primero (puedes mostrar todos si quieres)
+        final equipo = equiposACargoSnap.docs.first.data();
+        // Calcula tiempo restante si tienes fechas en el doc
+        DateTime? fechaDevolucion;
+        if (equipo['fecha_devolucion'] != null) {
+          try {
+            fechaDevolucion = DateTime.parse(equipo['fecha_devolucion']);
+          } catch (_) {}
+        }
+        final tiempoRestante = fechaDevolucion != null
+            ? fechaDevolucion.difference(DateTime.now())
+            : Duration.zero;
+        lista.add({
+          'id': doc.id,
+          'nombre': data['nombre'],
+          'email': data['email'],
+          'celular': data['celular'],
+          'equipo': equipo['nombre'] ?? 'Equipo no registrado',
+          'tiempo_restante': tiempoRestante,
+          'fechaDevolucion': equipo['fecha_devolucion'],
+        });
+      }
+    }
     setState(() {
       estudiantes = lista;
       aplicarFiltros();
@@ -56,8 +77,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   // Método para enviar correo de notificación al estudiante
   Future<void> _enviarCorreoNotificacion(String destinatario, String estado, Map<String, dynamic> solicitud) async {
     // Configura tu correo SMTP (Gmail en este ejemplo)
-    String username = 'tu_correo@gmail.com'; // Reemplaza por tu correo Gmail
-    String password = 'tu_contraseña_de_aplicación'; // Contraseña de aplicación de Gmail
+    String username = 'kenss12345@gmail.com'; // Reemplaza por tu correo Gmail
+    String password = 'qsex cejw glnq namr'; // Contraseña de aplicación de Gmail
 
     final smtpServer = gmail(username, password);
 
@@ -117,111 +138,13 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   @override
-  /*Widget build(BuildContext context) {
-    return Scaffold(
-    appBar: AppBar(
-      title: const Text('Usuarios con Equipos'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.logout),
-          tooltip: 'Cerrar sesión',
-          onPressed: () async {
-            //Desconectar Google (si procede)
-            final googleSignIn = GoogleSignIn();
-            if (await googleSignIn.isSignedIn()) {
-              await googleSignIn.signOut();
-            }
-            //Cerrar sesión de Firebase
-            await FirebaseAuth.instance.signOut();
-            //Reiniciar el stack y volver a AuthWrapper
-            if (!mounted) return;
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const AuthWrapper()),
-              (route) => false,
-            );
-          },
-        ),
-      ],
-    ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: "Buscar por nombre...",
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (valor) {
-                filtroNombre = valor;
-                aplicarFiltros();
-              },
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton.icon(
-                icon: Icon(filtrarMenosDe5Horas ? Icons.filter_alt : Icons.filter_alt_outlined),
-                label: const Text("Menos de 5h"),
-                onPressed: () {
-                  filtrarMenosDe5Horas = !filtrarMenosDe5Horas;
-                  aplicarFiltros();
-                },
-              ),
-            ],
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: estudiantesFiltrados.length,
-              itemBuilder: (context, index) {
-                final estudiante = estudiantesFiltrados[index];
-                final tiempo = estudiante['tiempo_restante'] as Duration;
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    title: Text(estudiante['nombre']),
-                    subtitle: Text(
-                      tiempo.inSeconds.isNegative
-                          ? "Tiempo excedido: ${-tiempo.inHours}h ${-tiempo.inMinutes.remainder(60)}m"
-                          : "Tiempo restante: ${tiempo.inHours}h ${tiempo.inMinutes.remainder(60)}m",
-                      style: TextStyle(
-                        color: tiempo.inSeconds.isNegative ? Colors.red : Colors.green,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetallePrestamoScreen(estudiante: estudiante),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => MapaScreen()));
-            },
-            child: const Text("Ver Mapa General"),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }*/
 
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: const Text('Gestión de Equipos'),
           actions: [
             IconButton(
@@ -369,9 +292,27 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: ListTile(
                 title: Text(data['nombre'] ?? "Sin nombre"),
-                subtitle: Text("Asignatura: ${data['asignatura']}"),
-                trailing: Text(data['hora_salida'] ?? "Sin hora"),
-                onTap: () => _mostrarDetallesSolicitud(context, solicitud),
+                subtitle: Text("Equipo: ${data['equipos']?[0]?['nombre'] ?? '---'}"),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.visibility, color: Colors.blue),
+                      tooltip: "Visualizar",
+                      onPressed: () => _mostrarDetallesSolicitud(context, solicitud),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.check, color: Colors.green),
+                      tooltip: "Aceptar",
+                      onPressed: () => _gestionarSolicitud(solicitud, "Aceptada"),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.red),
+                      tooltip: "Rechazar",
+                      onPressed: () => _gestionarSolicitud(solicitud, "Rechazada"),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -383,21 +324,28 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   // Mostrar detalles de la solicitud
   void _mostrarDetallesSolicitud(BuildContext context, QueryDocumentSnapshot solicitud) {
     final data = solicitud.data() as Map<String, dynamic>;
+    final equipos = data['equipos'] as List? ?? [];
+    final equiposList = equipos.map((e) => e['nombre']).join(', ');
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text("Detalles de la Solicitud"),
-          content: Text("Asignatura: ${data['asignatura']}\nLugar: ${data['lugar']}"),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Nombre: ${data['nombre']}"),
+              Text("Equipo(s): $equiposList"),
+              Text("Fecha/hora de solicitud: ${data['fecha_envio'] != null && data['fecha_envio'] is Timestamp ? (data['fecha_envio'] as Timestamp).toDate().toString() : '---'}"),
+              Text("Fecha/hora de devolución: ${data['fecha_devolucion'] ?? '---'}"),
+            ],
+          ),
           actions: [
             TextButton(
-              onPressed: () => _gestionarSolicitud(solicitud, "Aceptada"),
-              child: const Text("Aceptar"),
-            ),
-            TextButton(
-              onPressed: () => _gestionarSolicitud(solicitud, "Rechazada"),
-              child: const Text("Rechazar"),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cerrar"),
             ),
           ],
         );
@@ -405,26 +353,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     );
   }
 
-  // Gestionar solicitud (Aceptar o Rechazar)
-  /*Future<void> _gestionarSolicitud(QueryDocumentSnapshot solicitud, String accion) async {
-    final equipos = solicitud['equipos'] as List;
-    for (var equipo in equipos) {
-      await FirebaseFirestore.instance.collection('equipos').doc(equipo['id']).update({
-        'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
-      });
-    }
-
-    // Enviar correo al usuario que realizó la solicitud
-    final data = solicitud.data() as Map<String, dynamic>;
-    final emailUsuario = data['email'] ?? "";
-    await _enviarCorreoNotificacion(emailUsuario, accion, data);
-
-    await solicitud.reference.delete(); // Elimina la solicitud
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Solicitud $accion.")),
-    );
-  }*/
     Future<void> _gestionarSolicitud(QueryDocumentSnapshot solicitud, String accion) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -483,5 +411,4 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
       SnackBar(content: Text("Solicitud $accion.")),
     );
   }
-
 }
