@@ -20,6 +20,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   List<Map<String, dynamic>> estudiantesFiltrados = [];
   String filtroNombre = "";
   bool filtrarMenosDe5Horas = false;
+  bool _procesandoSolicitud = false;
+
 
   @override
   void initState() {
@@ -138,37 +140,63 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   @override
-
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: const Text('Gestión de Equipos'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Cerrar sesión',
-              onPressed: () => _mostrarConfirmacionCerrarSesion(),
+    return Stack(
+      children: [
+        DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              title: const Text('Gestión de Equipos'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  tooltip: 'Cerrar sesión',
+                  onPressed: () => _mostrarConfirmacionCerrarSesion(),
+                ),
+              ],
+              bottom: const TabBar(
+                tabs: [
+                  Tab(text: "Usuarios con Equipos"),
+                  Tab(text: "Solicitudes"),
+                ],
+              ),
             ),
-          ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: "Usuarios con Equipos"),
-              Tab(text: "Solicitudes"),
-            ],
+            body: TabBarView(
+              children: [
+                _buildUsuariosConEquiposTab(),
+                _buildSolicitudesTab(),
+              ],
+            ),
           ),
         ),
-        body: TabBarView(
-          children: [
-            _buildUsuariosConEquiposTab(),
-            _buildSolicitudesTab(),
-          ],
-        ),
-      ),
+        if (_procesandoSolicitud)
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: Container(
+                color: Colors.black.withOpacity(0.45),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: Colors.orange),
+                      SizedBox(height: 24),
+                      Text(
+                        "Procesando solicitud...",
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
+
 
   // Método para mostrar el diálogo de confirmación
   void _mostrarConfirmacionCerrarSesion() {
@@ -354,61 +382,82 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
     Future<void> _gestionarSolicitud(QueryDocumentSnapshot solicitud, String accion) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No estás autenticado. Inicia sesión nuevamente.")),
-      );
-      return;
+      setState(() => _procesandoSolicitud = true);
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("No estás autenticado. Inicia sesión nuevamente.")),
+          );
+          return;
+        }
+
+        // Verifica que el usuario es gestor
+        final userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+        final userData = userDoc.data() as Map<String, dynamic>?;
+
+        if (userData == null || userData['rol'] != "gestor") {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("No tienes permisos para gestionar esta solicitud.")),
+          );
+          return;
+        }
+
+        final equipos = solicitud['equipos'] as List;
+        final uidSolicitante = solicitud['uid'] as String;
+
+        for (var equipo in equipos) {
+          await FirebaseFirestore.instance.collection('equipos').doc(equipo['id']).update({
+            'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
+            if (accion == "Aceptada")
+              'fecha_devolucion': solicitud['fecha_devolucion'],
+            if (accion == "Rechazada")
+              'fecha_devolucion': null,
+          });
+
+          final docRef = FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uidSolicitante)
+            .collection('equipos_a_cargo')
+            .doc(equipo['id']);
+
+          if (accion == "Aceptada") {
+            await docRef.update({
+              'estado_prestamo': "En uso",
+            });
+          } else if (accion == "Rechazada") {
+            await docRef.delete();
+          }
+        }
+
+        await solicitud.reference.delete();
+
+        final data = solicitud.data() as Map<String, dynamic>;
+        final emailUsuario = data['email'] ?? "";
+        await _enviarCorreoNotificacion(emailUsuario, accion, data);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Solicitud $accion."),
+              backgroundColor: accion == "Aceptada" ? Colors.green : Colors.red,
+            ),
+          );
+        }
+
+        // Recarga usuarios si quieres refrescar la pantalla de inmediato
+        await obtenerUsuarios();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Error al procesar: $e"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _procesandoSolicitud = false);
+      }
     }
-
-    // Verifica que el usuario es gestor
-    final userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
-    final userData = userDoc.data() as Map<String, dynamic>?;
-
-    if (userData == null || userData['rol'] != "gestor") {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No tienes permisos para gestionar esta solicitud.")),
-      );
-      return;
-    }
-
-    // Ahora gestiona la solicitud
-    final equipos = solicitud['equipos'] as List;
-    final uidSolicitante = solicitud['uid'] as String;
-
-    for (var equipo in equipos) {
-      // Cambia el estado global
-      await FirebaseFirestore.instance.collection('equipos').doc(equipo['id']).update({
-        'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
-      });
-
-      final docRef = FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(uidSolicitante)
-        .collection('equipos_a_cargo')
-        .doc(equipo['id']);
-
-      if (accion == "Aceptada") {
-      // Cambia el estado en la subcolección del usuario a "En uso"
-      await docRef.update({
-        'estado_prestamo': "En uso",
-      });
-    } else if (accion == "Rechazada") {
-      // Puedes eliminar el documento de la subcolección o actualizar a Disponible
-      await docRef.delete();
-    }
-  }
-
-    await solicitud.reference.delete(); // Elimina la solicitud
-
-    // Enviar correo al usuario que realizó la solicitud
-    final data = solicitud.data() as Map<String, dynamic>;
-    final emailUsuario = data['email'] ?? "";
-    await _enviarCorreoNotificacion(emailUsuario, accion, data);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Solicitud $accion.")),
-    );
-  }
 }

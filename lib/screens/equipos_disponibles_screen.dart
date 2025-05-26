@@ -30,6 +30,30 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     _loadEquiposDesdeFirestore();
   }
 
+  String calcularTiempoRestante(dynamic fechaDevolucion) {
+    if (fechaDevolucion == null) return "No disponible";
+    DateTime? fecha;
+    if (fechaDevolucion is String) {
+      try {
+        fecha = DateTime.parse(fechaDevolucion);
+      } catch (_) {}
+    } else if (fechaDevolucion is Timestamp) {
+      fecha = fechaDevolucion.toDate();
+    }
+    if (fecha == null) return "No disponible";
+
+    final diferencia = fecha.difference(DateTime.now());
+    if (diferencia.isNegative) return "Venció";
+
+    if (diferencia.inDays > 0) {
+      return "${diferencia.inDays} día(s), ${diferencia.inHours % 24}h";
+    } else if (diferencia.inHours > 0) {
+      return "${diferencia.inHours}h ${diferencia.inMinutes % 60}m";
+    } else {
+      return "${diferencia.inMinutes}m";
+    }
+  }
+
   Future<void> _obtenerUsuarioYPuntos() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -48,31 +72,32 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   }
 
   Future<void> _loadEquiposDesdeFirestore() async {
-  final snapshot = await FirebaseFirestore.instance.collection('equipos').get();
+    final snapshot = await FirebaseFirestore.instance.collection('equipos').get();
 
-  setState(() {
-    equipos = snapshot.docs.map((doc) {
-      final data = doc.data();
-      final tipoEquipo = data['tipoEquipo'] ?? 'normal';
+    setState(() {
+      equipos = snapshot.docs.map((doc) {
+        final data = doc.data();
+        final tipoEquipo = data['tipoEquipo'] ?? 'normal';
 
-      // Si el equipo es premium y el usuario no tiene suficientes puntos, se omite
-      if (tipoEquipo == 'premium' && (_puntosUsuario ?? 0) < 15) {
-        return null;
-      }
+        // Si el equipo es premium y el usuario no tiene suficientes puntos, se omite
+        if (tipoEquipo == 'premium' && (_puntosUsuario ?? 0) < 15) {
+          return null;
+        }
 
-      return {
-        'id': doc.id,
-        'nombre': data['nombre'],
-        'descripcion': data['descripcion'],
-        'imagenes': List<String>.from(data['imagenes']),
-        'estado': data['estado'],
-        'tiempoMax': data['tiempoMax'],
-        'categoria': data['categoria'],
-        'tipoEquipo': tipoEquipo,
-      };
-    }).where((equipo) => equipo != null).cast<Map<String, dynamic>>().toList();
-  });
-}
+        return {
+          'id': doc.id,
+          'nombre': data['nombre'],
+          'descripcion': data['descripcion'],
+          'imagenes': List<String>.from(data['imagenes']),
+          'estado': data['estado'],
+          'tiempoMax': data['tiempoMax'],
+          'categoria': data['categoria'],
+          'tipoEquipo': tipoEquipo,
+          'fecha_devolucion': data['fecha_devolucion'],
+        };
+      }).where((equipo) => equipo != null).cast<Map<String, dynamic>>().toList();
+    });
+  }
 
   /*void _anadirAEquiposACargo(Map<String, dynamic> equipo) {
   final DateTime ahora = DateTime.now();
@@ -466,16 +491,30 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                               ),
                                             ),
                                             const SizedBox(width: 10),
-                                            Chip(
-                                              label: Text(
-                                                equipo["estado"],
-                                                style: const TextStyle(color: Colors.white),
-                                              ),
-                                              backgroundColor: equipo["estado"] == "Disponible"
-                                                  ? Colors.green
-                                                  : equipo["estado"] == "En Uso"
-                                                      ? Colors.orange
-                                                      : Colors.red,
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                Chip(
+                                                  label: Text(
+                                                    equipo["estado"],
+                                                    style: const TextStyle(color: Colors.white),
+                                                  ),
+                                                  backgroundColor: equipo["estado"] == "Disponible"
+                                                      ? Colors.green
+                                                      : equipo["estado"] == "En Uso"
+                                                          ? Colors.orange
+                                                          : Colors.red,
+                                                ),
+                                                // Solo muestra el tiempo si está en uso y tiene fecha_devolucion
+                                                if (equipo["estado"] == "En Uso" && equipo["fecha_devolucion"] != null)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(top: 4),
+                                                    child: Text(
+                                                      "Restante: ${calcularTiempoRestante(equipo["fecha_devolucion"])}",
+                                                      style: const TextStyle(fontSize: 12, color: Colors.orange),
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
                                           ],
                                         ),

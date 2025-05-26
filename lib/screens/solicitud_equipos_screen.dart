@@ -94,6 +94,17 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
         if (user != null) {
           final equipos = CarritoEquipos().equipos;
 
+          // Convierte la fecha a DateTime y luego a Timestamp
+          Timestamp fechaDevolucionTS;
+          try {
+            // Usa el formato que generas en _ajustarFechasPorTrabajo
+            fechaDevolucionTS = Timestamp.fromDate(
+              DateFormat(fechaDevolucion.contains(':') ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy').parse(fechaDevolucion),
+            );
+          } catch (e) {
+            fechaDevolucionTS = Timestamp.now(); // fallback de emergencia
+          }
+
           await FirebaseFirestore.instance.collection('solicitudes').add({
             'uid': user.uid,
             'nombre': nombreUsuario,
