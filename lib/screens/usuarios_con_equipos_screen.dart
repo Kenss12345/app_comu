@@ -7,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';      // si usas Google Sign
 import '../main.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
+import 'package:intl/intl.dart'; 
 
 class UsuariosConEquiposScreen extends StatefulWidget {
   const UsuariosConEquiposScreen({super.key});
@@ -407,10 +408,29 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         final uidSolicitante = solicitud['uid'] as String;
 
         for (var equipo in equipos) {
+          // Convierte a Timestamp si es String, o usa directo si ya es Timestamp
+          dynamic fechaDevolucion = solicitud['fecha_devolucion'];
+          Timestamp? fechaDevolucionTS;
+          if (fechaDevolucion is Timestamp) {
+            fechaDevolucionTS = fechaDevolucion;
+          } else if (fechaDevolucion is String) {
+            try {
+              // Intenta leer como dd/MM/yyyy HH:mm, si tienes hora; o dd/MM/yyyy si no
+              DateTime dt;
+              if (fechaDevolucion.contains(":")) {
+                dt = DateFormat('dd/MM/yyyy HH:mm').parse(fechaDevolucion);
+              } else {
+                dt = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
+              }
+              fechaDevolucionTS = Timestamp.fromDate(dt);
+            } catch (e) {
+              fechaDevolucionTS = null;
+            }
+          }
           await FirebaseFirestore.instance.collection('equipos').doc(equipo['id']).update({
             'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
             if (accion == "Aceptada")
-              'fecha_devolucion': solicitud['fecha_devolucion'],
+              'fecha_devolucion': fechaDevolucionTS,
             if (accion == "Rechazada")
               'fecha_devolucion': null,
           });
