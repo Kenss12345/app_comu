@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'detalle_prestamo_screen.dart';
-import 'mapa_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';      // si usas Google Sign-In
 import '../main.dart';
@@ -22,6 +21,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   String filtroNombre = "";
   bool filtrarMenosDe5Horas = false;
   bool _procesandoSolicitud = false;
+  String filtroNombreSolicitante = "";
+  bool ordenarRecientesPrimero = true;
 
 
   @override
@@ -300,7 +301,24 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
   // Pestaña de Solicitudes
   Widget _buildSolicitudesTab() {
-    return StreamBuilder<QuerySnapshot>(
+    return Column(
+    children: [
+      // Filtro por nombre de solicitante
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: TextField(
+          decoration: const InputDecoration(
+            hintText: "Buscar por nombre...",
+            prefixIcon: Icon(Icons.search),
+          ),
+          onChanged: (valor) {
+            setState(() {
+              filtroNombreSolicitante = valor.trim().toLowerCase();
+            });
+          },
+        ),
+      ),
+    /*return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('solicitudes').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -310,7 +328,60 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           return const Center(child: Text("Error al cargar solicitudes."));
         }
 
-        final solicitudes = snapshot.data?.docs ?? [];
+        final solicitudes = snapshot.data?.docs ?? [];*/
+
+        // Switch de orden por horario
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const Text("Antiguos"),
+            Switch(
+              value: ordenarRecientesPrimero,
+              onChanged: (val) => setState(() => ordenarRecientesPrimero = val),
+            ),
+            const Text("Recientes"),
+          ],
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance.collection('solicitudes').snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return const Center(child: Text("Error al cargar solicitudes."));
+              }
+              var solicitudes = snapshot.data?.docs ?? [];
+
+        // FILTRO POR NOMBRE DE SOLICITANTE
+        if (filtroNombreSolicitante.isNotEmpty) {
+          solicitudes = solicitudes.where((doc) {
+            final nombre = (doc['nombre'] ?? '').toString().toLowerCase();
+            return nombre.contains(filtroNombreSolicitante);
+          }).toList();
+        }
+
+        // ORDENAR POR FECHA ENVIO
+        solicitudes.sort((a, b) {
+          final tsA = a['fecha_envio'];
+          final tsB = b['fecha_envio'];
+          DateTime dtA, dtB;
+          if (tsA is Timestamp) {
+            dtA = tsA.toDate();
+          } else {
+            dtA = DateTime.now();
+          }
+          if (tsB is Timestamp) {
+            dtB = tsB.toDate();
+          } else {
+            dtB = DateTime.now();
+          }
+          return ordenarRecientesPrimero
+              ? dtB.compareTo(dtA)
+              : dtA.compareTo(dtB);
+        });
+
         return ListView.builder(
           itemCount: solicitudes.length,
           itemBuilder: (context, index) {
@@ -347,6 +418,9 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           },
         );
       },
+          ),
+        ),
+      ],
     );
   }
 

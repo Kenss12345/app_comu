@@ -1,5 +1,4 @@
 import 'package:app_comu/main.dart';
-import 'package:app_comu/screens/usuarios_con_equipos_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:app_comu/utils/dialogs.dart';
