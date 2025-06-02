@@ -2,17 +2,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'detalle_prestamo_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';      // si usas Google Sign-In
+import 'package:google_sign_in/google_sign_in.dart'; // si usas Google Sign-In
 import '../main.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
-import 'package:intl/intl.dart'; 
+import 'package:intl/intl.dart';
 
 class UsuariosConEquiposScreen extends StatefulWidget {
   const UsuariosConEquiposScreen({super.key});
 
   @override
-  State<UsuariosConEquiposScreen> createState() => _UsuariosConEquiposScreenState();
+  State<UsuariosConEquiposScreen> createState() =>
+      _UsuariosConEquiposScreenState();
 }
 
 class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
@@ -20,10 +21,12 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   List<Map<String, dynamic>> estudiantesFiltrados = [];
   String filtroNombre = "";
   bool filtrarMenosDe5Horas = false;
+  String filtroDni = "";
+  bool ordenarTiempoRestanteAsc = true;
+  bool mostrarSoloExcedidos = false;
   bool _procesandoSolicitud = false;
   String filtroNombreSolicitante = "";
   bool ordenarRecientesPrimero = true;
-
 
   @override
   void initState() {
@@ -32,20 +35,20 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   Future<void> obtenerUsuarios() async {
-
-     // 1. Obtener todos los usuarios
-    final usuariosSnap = await FirebaseFirestore.instance.collection('usuarios').get();
+    // 1. Obtener todos los usuarios
+    final usuariosSnap =
+        await FirebaseFirestore.instance.collection('usuarios').get();
 
     List<Map<String, dynamic>> lista = [];
 
     for (final doc in usuariosSnap.docs) {
       // 2. Busca equipos en uso para cada usuario
       final equiposACargoSnap = await FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(doc.id)
-        .collection('equipos_a_cargo')
-        .where('estado_prestamo', isEqualTo: "En uso")
-        .get();
+          .collection('usuarios')
+          .doc(doc.id)
+          .collection('equipos_a_cargo')
+          .where('estado_prestamo', isEqualTo: "En uso")
+          .get();
 
       if (equiposACargoSnap.docs.isNotEmpty) {
         final data = doc.data();
@@ -66,6 +69,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           'nombre': data['nombre'],
           'email': data['email'],
           'celular': data['celular'],
+          'dni': data['dni'],
           'equipo': equipo['nombre'] ?? 'Equipo no registrado',
           'tiempo_restante': tiempoRestante,
           'fechaDevolucion': equipo['fecha_devolucion'],
@@ -79,15 +83,19 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   // Método para enviar correo de notificación al estudiante
-  Future<void> _enviarCorreoNotificacion(String destinatario, String estado, Map<String, dynamic> solicitud) async {
+  Future<void> _enviarCorreoNotificacion(String destinatario, String estado,
+      Map<String, dynamic> solicitud) async {
     // Configura tu correo SMTP (Gmail en este ejemplo)
     String username = 'kenss12345@gmail.com'; // Reemplaza por tu correo Gmail
-    String password = 'qsex cejw glnq namr'; // Contraseña de aplicación de Gmail
+    String password =
+        'qsex cejw glnq namr'; // Contraseña de aplicación de Gmail
 
     final smtpServer = gmail(username, password);
 
     // Construir el contenido del correo
-    String contenidoEquipos = (solicitud['equipos'] as List).map((e) => "- ${e['nombre']}").join("\n");
+    String contenidoEquipos = (solicitud['equipos'] as List)
+        .map((e) => "- ${e['nombre']}")
+        .join("\n");
 
     final message = Message()
       ..from = Address(username, 'Soporte Audiovisual')
@@ -131,13 +139,33 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   void aplicarFiltros() {
+    List<Map<String, dynamic>> lista = estudiantes.where((est) {
+      final nombreMatch =
+          est['nombre'].toLowerCase().contains(filtroNombre.toLowerCase());
+      final dniMatch = filtroDni.isEmpty ||
+          (est['dni'] ?? '').toString().contains(filtroDni);
+      final tiempo = est['tiempo_restante'] as Duration;
+      final esExcedido = tiempo.inSeconds.isNegative;
+
+      // Filtro por excedidos o no
+      final filtroExcedido = !mostrarSoloExcedidos || esExcedido;
+
+      return nombreMatch && dniMatch && filtroExcedido;
+    }).toList();
+
+    // Ordenamiento
+    lista.sort((a, b) {
+      final ta = a['tiempo_restante'] as Duration;
+      final tb = b['tiempo_restante'] as Duration;
+      if (ordenarTiempoRestanteAsc) {
+        return ta.compareTo(tb);
+      } else {
+        return tb.compareTo(ta);
+      }
+    });
+
     setState(() {
-      estudiantesFiltrados = estudiantes.where((est) {
-        final nombreMatch = est['nombre'].toLowerCase().contains(filtroNombre.toLowerCase());
-        final tiempo = est['tiempo_restante'] as Duration;
-        final tiempoMatch = !filtrarMenosDe5Horas || (tiempo > Duration.zero && tiempo < Duration(hours: 5));
-        return nombreMatch && tiempoMatch;
-      }).toList();
+      estudiantesFiltrados = lista;
     });
   }
 
@@ -145,6 +173,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        Container(color: const Color(0xFFF7F7FA)), // Fondo suave
         DefaultTabController(
           length: 2,
           child: Scaffold(
@@ -199,7 +228,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     );
   }
 
-
   // Método para mostrar el diálogo de confirmación
   void _mostrarConfirmacionCerrarSesion() {
     showDialog(
@@ -210,7 +238,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           content: const Text("¿Estás seguro de que deseas cerrar sesión?"),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(), // Cerrar el diálogo sin hacer nada
+              onPressed: () => Navigator.of(context)
+                  .pop(), // Cerrar el diálogo sin hacer nada
               child: const Text("Cancelar"),
             ),
             TextButton(
@@ -224,6 +253,17 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         );
       },
     );
+  }
+
+  String _formateaFecha(dynamic fecha) {
+    if (fecha == null) return "---";
+    if (fecha is Timestamp) {
+      return DateFormat('dd/MM/yyyy HH:mm').format(fecha.toDate());
+    }
+    if (fecha is String) {
+      return fecha;
+    }
+    return fecha.toString();
   }
 
   // Método para cerrar sesión
@@ -247,185 +287,375 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
   // Pestaña de Usuarios con Equipos
   Widget _buildUsuariosConEquiposTab() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: TextField(
-            decoration: const InputDecoration(
-              hintText: "Buscar por nombre...",
-              prefixIcon: Icon(Icons.search),
-            ),
-            onChanged: (valor) {
-              filtroNombre = valor;
-              aplicarFiltros();
-            },
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: estudiantesFiltrados.length,
-            itemBuilder: (context, index) {
-              final estudiante = estudiantesFiltrados[index];
-              final tiempo = estudiante['tiempo_restante'] as Duration;
-
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: ListTile(
-                  title: Text(estudiante['nombre']),
-                  subtitle: Text(
-                    tiempo.inSeconds.isNegative
-                        ? "Tiempo excedido: ${-tiempo.inHours}h ${-tiempo.inMinutes.remainder(60)}m"
-                        : "Tiempo restante: ${tiempo.inHours}h ${tiempo.inMinutes.remainder(60)}m",
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 900),
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 6,
+        child: Padding(
+          padding: const EdgeInsets.all(28.0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.people, color: Colors.deepOrange, size: 32),
+                  const SizedBox(width: 14),
+                  Text(
+                    "Usuarios con equipos en uso",
                     style: TextStyle(
-                      color: tiempo.inSeconds.isNegative ? Colors.red : Colors.green,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
                   ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetallePrestamoScreen(estudiante: estudiante),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      // Filtro por nombre
+                      Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: "Buscar por nombre...",
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onChanged: (valor) {
+                            filtroNombre = valor;
+                            aplicarFiltros();
+                          },
+                        ),
                       ),
-                    );
-                  },
-                ),
-              );
-            },
+                      const SizedBox(width: 12),
+                      // Filtro por DNI
+                      SizedBox(
+                        width: 180,
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: "Buscar por DNI...",
+                            prefixIcon: const Icon(Icons.credit_card),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (valor) {
+                            filtroDni = valor;
+                            aplicarFiltros();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      // Ordenar por tiempo restante
+                      const Text("Ordenar por: "),
+                      DropdownButton<bool>(
+                        value: ordenarTiempoRestanteAsc,
+                        items: const [
+                          DropdownMenuItem(
+                              value: true, child: Text("Tiempo restante asc")),
+                          DropdownMenuItem(
+                              value: false,
+                              child: Text("Tiempo restante desc")),
+                        ],
+                        onChanged: (val) {
+                          if (val == null) return;
+                          setState(() {
+                            ordenarTiempoRestanteAsc = val;
+                            aplicarFiltros();
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 18),
+                      // Filtrar solo excedidos
+                      Checkbox(
+                        value: mostrarSoloExcedidos,
+                        onChanged: (val) {
+                          setState(() {
+                            mostrarSoloExcedidos = val ?? false;
+                            aplicarFiltros();
+                          });
+                        },
+                      ),
+                      const Text("Mostrar solo excedidos"),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: estudiantesFiltrados.isEmpty
+                    ? const Center(
+                        child: Text("No hay usuarios con equipos en uso."))
+                    : ListView.separated(
+                        itemCount: estudiantesFiltrados.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final estudiante = estudiantesFiltrados[index];
+                          final tiempo =
+                              estudiante['tiempo_restante'] as Duration;
+
+                          return Card(
+                            color: tiempo.inSeconds.isNegative
+                                ? Colors.red.shade50
+                                : Colors.green.shade50,
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18)),
+                            child: ListTile(
+                              leading: const Icon(Icons.person,
+                                  size: 38, color: Colors.blueGrey),
+                              title: Text(estudiante['nombre'],
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18)),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 2.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "DNI: ${estudiante['dni'] ?? '---'}",
+                                      style: TextStyle(
+                                          fontSize: 15,
+                                          color: Colors.grey[700]),
+                                    ),
+                                    Text(
+                                      estudiante['tiempo_restante']
+                                              .inSeconds
+                                              .isNegative
+                                          ? "Tiempo excedido: ${-estudiante['tiempo_restante'].inHours}h ${-estudiante['tiempo_restante'].inMinutes.remainder(60)}m"
+                                          : "Tiempo restante: ${estudiante['tiempo_restante'].inHours}h ${estudiante['tiempo_restante'].inMinutes.remainder(60)}m",
+                                      style: TextStyle(
+                                        color: estudiante['tiempo_restante']
+                                                .inSeconds
+                                                .isNegative
+                                            ? Colors.red
+                                            : Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Debe devolver: ${estudiante['fechaDevolucion'] ?? '---'}",
+                                      style: const TextStyle(
+                                          fontSize: 15, color: Colors.blueGrey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              trailing: Icon(Icons.chevron_right,
+                                  color: Colors.orange.shade600, size: 32),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DetallePrestamoScreen(
+                                        estudiante: estudiante),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
   // Pestaña de Solicitudes
   Widget _buildSolicitudesTab() {
-    return Column(
-    children: [
-      // Filtro por nombre de solicitante
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: TextField(
-          decoration: const InputDecoration(
-            hintText: "Buscar por nombre...",
-            prefixIcon: Icon(Icons.search),
-          ),
-          onChanged: (valor) {
-            setState(() {
-              filtroNombreSolicitante = valor.trim().toLowerCase();
-            });
-          },
-        ),
-      ),
-    /*return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('solicitudes').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return const Center(child: Text("Error al cargar solicitudes."));
-        }
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 1100),
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 6,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.assignment,
+                      color: Colors.deepOrange, size: 32),
+                  const SizedBox(width: 14),
+                  Text(
+                    "Solicitudes pendientes",
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
+                  ),
+                  const Spacer(),
+                  const Text("Antiguos", style: TextStyle(fontSize: 15)),
+                  Switch(
+                    value: ordenarRecientesPrimero,
+                    onChanged: (val) =>
+                        setState(() => ordenarRecientesPrimero = val),
+                  ),
+                  const Text("Recientes", style: TextStyle(fontSize: 15)),
+                ],
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: "Buscar por nombre del solicitante...",
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                onChanged: (valor) {
+                  setState(() {
+                    filtroNombreSolicitante = valor.trim().toLowerCase();
+                  });
+                },
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('solicitudes')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return const Center(
+                          child: Text("Error al cargar solicitudes."));
+                    }
+                    var solicitudes = snapshot.data?.docs ?? [];
 
-        final solicitudes = snapshot.data?.docs ?? [];*/
+                    // FILTRO POR NOMBRE DE SOLICITANTE
+                    if (filtroNombreSolicitante.isNotEmpty) {
+                      solicitudes = solicitudes.where((doc) {
+                        final nombre =
+                            (doc['nombre'] ?? '').toString().toLowerCase();
+                        return nombre.contains(filtroNombreSolicitante);
+                      }).toList();
+                    }
 
-        // Switch de orden por horario
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            const Text("Antiguos"),
-            Switch(
-              value: ordenarRecientesPrimero,
-              onChanged: (val) => setState(() => ordenarRecientesPrimero = val),
-            ),
-            const Text("Recientes"),
-          ],
-        ),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('solicitudes').snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return const Center(child: Text("Error al cargar solicitudes."));
-              }
-              var solicitudes = snapshot.data?.docs ?? [];
+                    // ORDENAR POR FECHA ENVIO
+                    solicitudes.sort((a, b) {
+                      final tsA = a['fecha_envio'];
+                      final tsB = b['fecha_envio'];
+                      DateTime dtA, dtB;
+                      if (tsA is Timestamp) {
+                        dtA = tsA.toDate();
+                      } else {
+                        dtA = DateTime.now();
+                      }
+                      if (tsB is Timestamp) {
+                        dtB = tsB.toDate();
+                      } else {
+                        dtB = DateTime.now();
+                      }
+                      return ordenarRecientesPrimero
+                          ? dtB.compareTo(dtA)
+                          : dtA.compareTo(dtB);
+                    });
 
-        // FILTRO POR NOMBRE DE SOLICITANTE
-        if (filtroNombreSolicitante.isNotEmpty) {
-          solicitudes = solicitudes.where((doc) {
-            final nombre = (doc['nombre'] ?? '').toString().toLowerCase();
-            return nombre.contains(filtroNombreSolicitante);
-          }).toList();
-        }
-
-        // ORDENAR POR FECHA ENVIO
-        solicitudes.sort((a, b) {
-          final tsA = a['fecha_envio'];
-          final tsB = b['fecha_envio'];
-          DateTime dtA, dtB;
-          if (tsA is Timestamp) {
-            dtA = tsA.toDate();
-          } else {
-            dtA = DateTime.now();
-          }
-          if (tsB is Timestamp) {
-            dtB = tsB.toDate();
-          } else {
-            dtB = DateTime.now();
-          }
-          return ordenarRecientesPrimero
-              ? dtB.compareTo(dtA)
-              : dtA.compareTo(dtB);
-        });
-
-        return ListView.builder(
-          itemCount: solicitudes.length,
-          itemBuilder: (context, index) {
-            final solicitud = solicitudes[index];
-            final data = solicitud.data() as Map<String, dynamic>;
-
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(data['nombre'] ?? "Sin nombre"),
-                subtitle: Text("Equipo: ${data['equipos']?[0]?['nombre'] ?? '---'}"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.visibility, color: Colors.blue),
-                      tooltip: "Visualizar",
-                      onPressed: () => _mostrarDetallesSolicitud(context, solicitud),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.check, color: Colors.green),
-                      tooltip: "Aceptar",
-                      onPressed: () => _gestionarSolicitud(solicitud, "Aceptada"),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: Colors.red),
-                      tooltip: "Rechazar",
-                      onPressed: () => _gestionarSolicitud(solicitud, "Rechazada"),
-                    ),
-                  ],
+                    // Tabla estilo CRUD
+                    return solicitudes.isEmpty
+                        ? const Center(
+                            child: Text("No hay solicitudes pendientes."))
+                        : SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: DataTable(
+                              columnSpacing: 18,
+                              columns: const [
+                                DataColumn(
+                                    label: Text("Solicitante",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                                DataColumn(
+                                    label: Text("Equipo",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                                DataColumn(
+                                    label: Text("Fecha solicitud",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                                DataColumn(
+                                    label: Text("Acciones",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                              ],
+                              rows: solicitudes.map<DataRow>((solicitud) {
+                                final data =
+                                    solicitud.data() as Map<String, dynamic>;
+                                final nombre = data['nombre'] ?? '---';
+                                final equipo =
+                                    data['equipos']?[0]?['nombre'] ?? '---';
+                                final fechaEnvio =
+                                    data['fecha_envio'] is Timestamp
+                                        ? DateFormat('dd/MM/yyyy HH:mm').format(
+                                            (data['fecha_envio'] as Timestamp)
+                                                .toDate())
+                                        : '---';
+                                return DataRow(
+                                  cells: [
+                                    DataCell(Text(nombre)),
+                                    DataCell(Text(equipo)),
+                                    DataCell(Text(fechaEnvio)),
+                                    DataCell(Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.visibility,
+                                              color: Colors.blue.shade600),
+                                          tooltip: "Visualizar",
+                                          onPressed: () =>
+                                              _mostrarDetallesSolicitud(
+                                                  context, solicitud),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.check_circle,
+                                              color: Colors.green.shade600),
+                                          tooltip: "Aceptar",
+                                          onPressed: () => _gestionarSolicitud(
+                                              solicitud, "Aceptada"),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.cancel,
+                                              color: Colors.red.shade600),
+                                          tooltip: "Rechazar",
+                                          onPressed: () => _gestionarSolicitud(
+                                              solicitud, "Rechazada"),
+                                        ),
+                                      ],
+                                    )),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          );
+                  },
                 ),
               ),
-            );
-          },
-        );
-      },
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
   // Mostrar detalles de la solicitud
-  void _mostrarDetallesSolicitud(BuildContext context, QueryDocumentSnapshot solicitud) {
+  void _mostrarDetallesSolicitud(
+      BuildContext context, QueryDocumentSnapshot solicitud) {
     final data = solicitud.data() as Map<String, dynamic>;
     final equipos = data['equipos'] as List? ?? [];
     final equiposList = equipos.map((e) => e['nombre']).join(', ');
@@ -441,8 +671,10 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
             children: [
               Text("Nombre: ${data['nombre']}"),
               Text("Equipo(s): $equiposList"),
-              Text("Fecha/hora de solicitud: ${data['fecha_envio'] != null && data['fecha_envio'] is Timestamp ? (data['fecha_envio'] as Timestamp).toDate().toString() : '---'}"),
-              Text("Fecha/hora de devolución: ${data['fecha_devolucion'] ?? '---'}"),
+              Text(
+                  "Fecha/hora de solicitud: ${data['fecha_envio'] != null && data['fecha_envio'] is Timestamp ? (data['fecha_envio'] as Timestamp).toDate().toString() : '---'}"),
+              Text(
+                  "Fecha/hora de devolución: ${data['fecha_devolucion'] ?? '---'}"),
             ],
           ),
           actions: [
@@ -456,102 +688,110 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     );
   }
 
-    Future<void> _gestionarSolicitud(QueryDocumentSnapshot solicitud, String accion) async {
-      setState(() => _procesandoSolicitud = true);
-      try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("No estás autenticado. Inicia sesión nuevamente.")),
-          );
-          return;
-        }
+  Future<void> _gestionarSolicitud(
+      QueryDocumentSnapshot solicitud, String accion) async {
+    setState(() => _procesandoSolicitud = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("No estás autenticado. Inicia sesión nuevamente.")),
+        );
+        return;
+      }
 
-        // Verifica que el usuario es gestor
-        final userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
-        final userData = userDoc.data() as Map<String, dynamic>?;
+      // Verifica que el usuario es gestor
+      final userDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
+      final userData = userDoc.data() as Map<String, dynamic>?;
 
-        if (userData == null || userData['rol'] != "gestor") {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("No tienes permisos para gestionar esta solicitud.")),
-          );
-          return;
-        }
+      if (userData == null || userData['rol'] != "gestor") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text("No tienes permisos para gestionar esta solicitud.")),
+        );
+        return;
+      }
 
-        final equipos = solicitud['equipos'] as List;
-        final uidSolicitante = solicitud['uid'] as String;
+      final equipos = solicitud['equipos'] as List;
+      final uidSolicitante = solicitud['uid'] as String;
 
-        for (var equipo in equipos) {
-          // Convierte a Timestamp si es String, o usa directo si ya es Timestamp
-          dynamic fechaDevolucion = solicitud['fecha_devolucion'];
-          Timestamp? fechaDevolucionTS;
-          if (fechaDevolucion is Timestamp) {
-            fechaDevolucionTS = fechaDevolucion;
-          } else if (fechaDevolucion is String) {
-            try {
-              // Intenta leer como dd/MM/yyyy HH:mm, si tienes hora; o dd/MM/yyyy si no
-              DateTime dt;
-              if (fechaDevolucion.contains(":")) {
-                dt = DateFormat('dd/MM/yyyy HH:mm').parse(fechaDevolucion);
-              } else {
-                dt = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
-              }
-              fechaDevolucionTS = Timestamp.fromDate(dt);
-            } catch (e) {
-              fechaDevolucionTS = null;
+      for (var equipo in equipos) {
+        // Convierte a Timestamp si es String, o usa directo si ya es Timestamp
+        dynamic fechaDevolucion = solicitud['fecha_devolucion'];
+        Timestamp? fechaDevolucionTS;
+        if (fechaDevolucion is Timestamp) {
+          fechaDevolucionTS = fechaDevolucion;
+        } else if (fechaDevolucion is String) {
+          try {
+            // Intenta leer como dd/MM/yyyy HH:mm, si tienes hora; o dd/MM/yyyy si no
+            DateTime dt;
+            if (fechaDevolucion.contains(":")) {
+              dt = DateFormat('dd/MM/yyyy HH:mm').parse(fechaDevolucion);
+            } else {
+              dt = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
             }
+            fechaDevolucionTS = Timestamp.fromDate(dt);
+          } catch (e) {
+            fechaDevolucionTS = null;
           }
-          await FirebaseFirestore.instance.collection('equipos').doc(equipo['id']).update({
-            'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
-            if (accion == "Aceptada")
-              'fecha_devolucion': fechaDevolucionTS,
-            if (accion == "Rechazada")
-              'fecha_devolucion': null,
-          });
+        }
+        await FirebaseFirestore.instance
+            .collection('equipos')
+            .doc(equipo['id'])
+            .update({
+          'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
+          if (accion == "Aceptada") 'fecha_devolucion': fechaDevolucionTS,
+          if (accion == "Rechazada") 'fecha_devolucion': null,
+        });
 
-          final docRef = FirebaseFirestore.instance
+        final docRef = FirebaseFirestore.instance
             .collection('usuarios')
             .doc(uidSolicitante)
             .collection('equipos_a_cargo')
             .doc(equipo['id']);
 
-          if (accion == "Aceptada") {
-            await docRef.update({
-              'estado_prestamo': "En uso",
-            });
-          } else if (accion == "Rechazada") {
-            await docRef.delete();
-          }
+        if (accion == "Aceptada") {
+          await docRef.update({
+            'estado_prestamo': "En uso",
+          });
+        } else if (accion == "Rechazada") {
+          await docRef.delete();
         }
-
-        await solicitud.reference.delete();
-
-        final data = solicitud.data() as Map<String, dynamic>;
-        final emailUsuario = data['email'] ?? "";
-        await _enviarCorreoNotificacion(emailUsuario, accion, data);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Solicitud $accion."),
-              backgroundColor: accion == "Aceptada" ? Colors.green : Colors.red,
-            ),
-          );
-        }
-
-        // Recarga usuarios si quieres refrescar la pantalla de inmediato
-        await obtenerUsuarios();
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Error al procesar: $e"),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _procesandoSolicitud = false);
       }
+
+      await solicitud.reference.delete();
+
+      final data = solicitud.data() as Map<String, dynamic>;
+      final emailUsuario = data['email'] ?? "";
+      await _enviarCorreoNotificacion(emailUsuario, accion, data);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Solicitud $accion."),
+            backgroundColor: accion == "Aceptada" ? Colors.green : Colors.red,
+          ),
+        );
+      }
+
+      // Recarga usuarios si quieres refrescar la pantalla de inmediato
+      await obtenerUsuarios();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error al procesar: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _procesandoSolicitud = false);
     }
+  }
 }

@@ -28,8 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-    _showError("Por favor, completa todos los campos.");
-    return;
+      _showError("Por favor, completa todos los campos.");
+      return;
     }
 
     // Validar que el correo sea institucional
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const AuthWrapper()),
         (route) => false,
-      );  
+      );
       /*Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ProfileScreen()),
@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       _showError(e.message ?? "Error desconocido");
     } finally {
-    setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
@@ -104,7 +104,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => showTermsDialog(context), // ya definida en register_screen.dart, reutilizable
+                          onTap: () => showTermsDialog(
+                              context), // ya definida en register_screen.dart, reutilizable
                           child: const Text(
                             "Acepto los términos y condiciones.",
                             style: TextStyle(fontSize: 14),
@@ -127,15 +128,22 @@ class _LoginScreenState extends State<LoginScreen> {
               ElevatedButton(
                 child: const Text('Guardar'),
                 onPressed: () async {
-                  if (dniController.text.isEmpty || celularController.text.isEmpty || !acceptTerms) {
+                  if (dniController.text.isEmpty ||
+                      celularController.text.isEmpty ||
+                      !acceptTerms) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Completa todos los campos y acepta los términos.")),
+                      const SnackBar(
+                          content: Text(
+                              "Completa todos los campos y acepta los términos.")),
                     );
                     return;
                   }
 
                   // Guardar en Firestore
-                  await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set({
+                  await FirebaseFirestore.instance
+                      .collection('usuarios')
+                      .doc(user.uid)
+                      .set({
                     'nombre': user.displayName ?? '',
                     'email': user.email,
                     'foto': user.photoURL,
@@ -151,7 +159,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.pop(context);
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const ProfileScreen()),
                   );
                 },
               ),
@@ -161,7 +170,6 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
   }
-
 
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
@@ -183,7 +191,8 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -195,7 +204,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Guarda los datos en Firestore si el usuario es nuevo
       final user = userCredential.user;
-      final userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user!.uid).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user!.uid)
+          .get();
 
       if (!userDoc.exists) {
         await _mostrarFormularioDatosAdicionales(user);
@@ -205,7 +217,10 @@ class _LoginScreenState extends State<LoginScreen> {
         int intentos = 0;
         do {
           await Future.delayed(const Duration(milliseconds: 300));
-          nuevoDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+          nuevoDoc = await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .get();
           intentos++;
         } while (!nuevoDoc.exists && intentos < 10);
 
@@ -223,14 +238,14 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const ProfileScreen()),
       );*/
-      
+
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const AuthWrapper()),
           (route) => false,
         );
       }
-      } catch (e) {
+    } catch (e) {
       debugPrint('Error en login con Google: $e');
       // Asegúrate de que el State sigue montado antes de mostrar un SnackBar
       if (mounted) _showError("Error al iniciar sesión con Google.");
@@ -247,7 +262,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -306,7 +320,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const RegisterScreen()),
                   );
                 },
                 style: OutlinedButton.styleFrom(
@@ -331,12 +346,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const GestorLoginScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const GestorLoginScreen()),
                   );
                 },
                 child: const Text(
                   "Acceder como Gestor de Equipos",
-                  style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.blue, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
