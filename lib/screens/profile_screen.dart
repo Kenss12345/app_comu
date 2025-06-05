@@ -57,11 +57,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'A cargo',
           ),
 
-          /*BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle),
-            label: 'Solicitud',
-          ),*/
-
         ],
       ),
     );

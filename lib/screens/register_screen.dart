@@ -69,11 +69,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           MaterialPageRoute(builder: (_) => const AuthWrapper()),
           (route) => false,
         );
-
-        /*Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );*/
       }
     } on FirebaseAuthException catch (e) {
       _showError(e.message ?? "Error desconocido");

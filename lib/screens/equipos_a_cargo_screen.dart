@@ -13,13 +13,11 @@ class EquiposACargoScreen extends StatefulWidget {
 
 class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   
-  //List<Map<String, dynamic>> get equiposACargo => CarritoEquipos().equipos;
   List<Map<String, dynamic>> equiposACargo = [];
   bool _cargando = true;
 
   //bool solicitando = false;
   bool solicitudRealizada = false;
-
   bool haySolicitudPendiente = false;
   bool hayEquiposEnUso = false;
 
@@ -138,7 +136,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   }
 
   bool _hayEquiposEnUso() {
-    return equiposACargo.any((equipo) => equipo["estado_prestamo"] == "en uso");
+    return equiposACargo.any((equipo) => equipo["estado"] == "En Uso");
   }
 
   @override

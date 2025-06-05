@@ -19,24 +19,6 @@ class _SplashScreenState extends State<SplashScreen> {
     //Future.delayed(const Duration(seconds: 3), checkUserStatus);
   }
 
-  /*void checkUserStatus() {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      // Usuario autenticado, ir a perfil
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-      );
-    } else {
-      // No autenticado, ir a login
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
-  }*/
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

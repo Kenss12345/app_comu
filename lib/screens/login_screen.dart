@@ -234,10 +234,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // Redirige al perfil
-      /*Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-      );*/
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(

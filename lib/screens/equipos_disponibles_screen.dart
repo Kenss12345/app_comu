@@ -99,26 +99,6 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     });
   }
 
-  /*void _anadirAEquiposACargo(Map<String, dynamic> equipo) {
-  final DateTime ahora = DateTime.now();
-  final DateTime devolucion = ahora.add(Duration(days: 2));
-
-  final equipoConFechas = {
-    ...equipo,
-    "fecha_prestamo": ahora.toString().split(' ')[0],
-    "fecha_devolucion": devolucion.toString().split(' ')[0],
-    "estado_prestamo": "Pendiente",
-    "imagen": equipo['imagenes'].isNotEmpty ? equipo['imagenes'][0] : "", // para mostrarlo en la otra pantalla
-  };
-
-  CarritoEquipos().agregarEquipo(equipoConFechas);
-
-  Navigator.pop(context);
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text("${equipo["nombre"]} añadido a equipos a cargo.")),
-  );
-}*/
-
   void _anadirAEquiposACargo(Map<String, dynamic> equipo) async {
     final equipoId = equipo['id'];
 
