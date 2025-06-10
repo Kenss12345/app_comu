@@ -285,6 +285,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     );
   }
 
+  int _dias(Duration dur) => dur.inDays.abs();
+
   // Pestaña de Usuarios con Equipos
   Widget _buildUsuariosConEquiposTab() {
     return Container(
@@ -431,8 +433,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                       estudiante['tiempo_restante']
                                               .inSeconds
                                               .isNegative
-                                          ? "Tiempo excedido: ${-estudiante['tiempo_restante'].inHours}h ${-estudiante['tiempo_restante'].inMinutes.remainder(60)}m"
-                                          : "Tiempo restante: ${estudiante['tiempo_restante'].inHours}h ${estudiante['tiempo_restante'].inMinutes.remainder(60)}m",
+                                          ? "Tiempo excedido: ${-_dias(estudiante['tiempo_restante'])} días"
+                                          : "Tiempo restante: ${_dias(estudiante['tiempo_restante'])} días",
                                       style: TextStyle(
                                         color: estudiante['tiempo_restante']
                                                 .inSeconds
@@ -603,7 +605,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                     data['equipos']?[0]?['nombre'] ?? '---';
                                 final fechaEnvio =
                                     data['fecha_envio'] is Timestamp
-                                        ? DateFormat('dd/MM/yyyy HH:mm').format(
+                                        ? DateFormat('dd/MM/yyyy').format(
                                             (data['fecha_envio'] as Timestamp)
                                                 .toDate())
                                         : '---';
@@ -672,9 +674,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
               Text("Nombre: ${data['nombre']}"),
               Text("Equipo(s): $equiposList"),
               Text(
-                  "Fecha/hora de solicitud: ${data['fecha_envio'] != null && data['fecha_envio'] is Timestamp ? (data['fecha_envio'] as Timestamp).toDate().toString() : '---'}"),
-              Text(
-                  "Fecha/hora de devolución: ${data['fecha_devolucion'] ?? '---'}"),
+                  "Fecha de solicitud: ${data['fecha_envio'] != null && data['fecha_envio'] is Timestamp ? (data['fecha_envio'] as Timestamp).toDate().toString() : '---'}"),
+              Text("Fecha de devolución: ${data['fecha_devolucion'] ?? '---'}"),
             ],
           ),
           actions: [
@@ -701,6 +702,9 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         return;
       }
 
+      final diasPrestamo = (solicitud['dias_prestamo'] ?? 2)
+          as int; // 2 como valor por defecto si no existe
+
       // Verifica que el usuario es gestor
       final userDoc = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -717,6 +721,12 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         return;
       }
 
+      final fechaPrestamo = DateTime.now();
+      final fechaDevolucion = fechaPrestamo.add(Duration(days: diasPrestamo));
+      final fechaDevolucionStr =
+          DateFormat('dd/MM/yyyy').format(fechaDevolucion);
+      final fechaDevolucionTS = Timestamp.fromDate(fechaDevolucion);
+
       final equipos = solicitud['equipos'] as List;
       final uidSolicitante = solicitud['uid'] as String;
 
@@ -731,7 +741,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
             // Intenta leer como dd/MM/yyyy HH:mm, si tienes hora; o dd/MM/yyyy si no
             DateTime dt;
             if (fechaDevolucion.contains(":")) {
-              dt = DateFormat('dd/MM/yyyy HH:mm').parse(fechaDevolucion);
+              dt = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
             } else {
               dt = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
             }
@@ -745,7 +755,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
             .doc(equipo['id'])
             .update({
           'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
-          if (accion == "Aceptada") 'fecha_devolucion': fechaDevolucionTS,
+          if (accion == "Aceptada") 'fecha_devolucion': fechaDevolucionStr,
           if (accion == "Rechazada") 'fecha_devolucion': null,
         });
 
@@ -758,6 +768,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         if (accion == "Aceptada") {
           await docRef.update({
             'estado_prestamo': "En uso",
+            'fecha_prestamo': fechaPrestamo.toIso8601String(),
+            'fecha_devolucion': fechaDevolucionStr,
           });
         } else if (accion == "Rechazada") {
           await docRef.delete();

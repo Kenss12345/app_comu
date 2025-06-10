@@ -12,7 +12,6 @@ class EquiposACargoScreen extends StatefulWidget {
 }
 
 class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
-  
   List<Map<String, dynamic>> equiposACargo = [];
   bool _cargando = true;
 
@@ -30,11 +29,15 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
           .doc(user.uid)
           .collection('equipos_a_cargo')
           .get();
-      
-      final equipos = snapshot.docs.map((doc) => doc.data()).cast<Map<String, dynamic>>().toList();
+
+      final equipos = snapshot.docs
+          .map((doc) => doc.data())
+          .cast<Map<String, dynamic>>()
+          .toList();
 
       bool solicitudPendiente = await _tieneSolicitudPendiente();
-      bool enUso = equipos.any((e) => (e['estado_prestamo'] ?? "").toLowerCase() == "en uso");
+      bool enUso = equipos
+          .any((e) => (e['estado_prestamo'] ?? "").toLowerCase() == "en uso");
 
       setState(() {
         equiposACargo = equipos;
@@ -60,7 +63,8 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
     try {
       // Transacción para cambiar el estado a "Disponible" en Firestore
       await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final equipoDocRef = FirebaseFirestore.instance.collection('equipos').doc(equipoId);
+        final equipoDocRef =
+            FirebaseFirestore.instance.collection('equipos').doc(equipoId);
         final snapshot = await transaction.get(equipoDocRef);
 
         if (!snapshot.exists) {
@@ -87,17 +91,19 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
+        SnackBar(
+            content:
+                Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
       );
 
       // Elimina del Firestore del usuario
       if (user != null) {
         await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .collection('equipos_a_cargo')
-          .doc(equipoId)
-          .delete();
+            .collection('usuarios')
+            .doc(user.uid)
+            .collection('equipos_a_cargo')
+            .doc(equipoId)
+            .delete();
       }
 
       // Elimina de la lista local
@@ -106,9 +112,10 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
+        SnackBar(
+            content:
+                Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
       );
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error al eliminar: ${e.toString()}")),
@@ -136,7 +143,8 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   }
 
   bool _hayEquiposEnUso() {
-    return equiposACargo.any((equipo) => equipo["estado"] == "En Uso");
+    return equiposACargo.any((equipo) =>
+        (equipo["estado_prestamo"] ?? "").toLowerCase() == "en uso");
   }
 
   @override
@@ -147,7 +155,6 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     if (_cargando) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -179,7 +186,8 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                   Expanded(
                     child: Text(
                       "Horario de devolución: Lunes a viernes de 8:00 am a 1:00 pm y sábado de 9:00 am a 1:00 pm",
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -229,8 +237,14 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("📅 Préstamo: ${equipo["fecha_prestamo"]}"),
-                              Text("📆 Devolución: ${equipo["fecha_devolucion"]}"),
+                              if ((equipo["estado_prestamo"] ?? "")
+                                      .toLowerCase() ==
+                                  "en uso") ...[
+                                Text(
+                                    "📅 Préstamo: ${equipo["fecha_prestamo"]}"),
+                                Text(
+                                    "📆 Devolución: ${equipo["fecha_devolucion"]}"),
+                              ],
                               const SizedBox(height: 4),
                               Text(
                                 "🟠 Estado: ${equipo["estado_prestamo"]}",
@@ -243,18 +257,21 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                           ),
                         ),
                         trailing: (!haySolicitudPendiente && !hayEquiposEnUso)
-                          ? IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.redAccent),
-                              onPressed: () => _eliminarEquipo(index),
-                            )
-                          : null,
+                            ? IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.redAccent),
+                                onPressed: () => _eliminarEquipo(index),
+                              )
+                            : null,
                       ),
                     );
                   },
                 ),
               ),
             const SizedBox(height: 20),
-            if (equiposACargo.isNotEmpty && !haySolicitudPendiente && !hayEquiposEnUso)
+            if (equiposACargo.isNotEmpty &&
+                !haySolicitudPendiente &&
+                !hayEquiposEnUso)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(

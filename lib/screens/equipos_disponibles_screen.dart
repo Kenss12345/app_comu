@@ -8,11 +8,11 @@ class EquiposDisponiblesScreen extends StatefulWidget {
   const EquiposDisponiblesScreen({super.key});
 
   @override
-  _EquiposDisponiblesScreenState createState() => _EquiposDisponiblesScreenState();
+  _EquiposDisponiblesScreenState createState() =>
+      _EquiposDisponiblesScreenState();
 }
 
 class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
-
   User? _usuarioActual;
   int? _puntosUsuario;
   bool _cargandoUsuario = true;
@@ -45,19 +45,17 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     final diferencia = fecha.difference(DateTime.now());
     if (diferencia.isNegative) return "Venció";
 
-    if (diferencia.inDays > 0) {
-      return "${diferencia.inDays} día(s), ${diferencia.inHours % 24}h";
-    } else if (diferencia.inHours > 0) {
-      return "${diferencia.inHours}h ${diferencia.inMinutes % 60}m";
-    } else {
-      return "${diferencia.inMinutes}m";
-    }
+    if (diferencia.inDays == 0) return "Menos de 1 día";
+    return "${diferencia.inDays} día(s)";
   }
 
   Future<void> _obtenerUsuarioYPuntos() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final snapshot = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
       final data = snapshot.data();
       setState(() {
         _usuarioActual = user;
@@ -72,30 +70,35 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   }
 
   Future<void> _loadEquiposDesdeFirestore() async {
-    final snapshot = await FirebaseFirestore.instance.collection('equipos').get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('equipos').get();
 
     setState(() {
-      equipos = snapshot.docs.map((doc) {
-        final data = doc.data();
-        final tipoEquipo = data['tipoEquipo'] ?? 'normal';
+      equipos = snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            final tipoEquipo = data['tipoEquipo'] ?? 'normal';
 
-        // Si el equipo es premium y el usuario no tiene suficientes puntos, se omite
-        if (tipoEquipo == 'premium' && (_puntosUsuario ?? 0) < 15) {
-          return null;
-        }
+            // Si el equipo es premium y el usuario no tiene suficientes puntos, se omite
+            if (tipoEquipo == 'premium' && (_puntosUsuario ?? 0) < 15) {
+              return null;
+            }
 
-        return {
-          'id': doc.id,
-          'nombre': data['nombre'],
-          'descripcion': data['descripcion'],
-          'imagenes': List<String>.from(data['imagenes']),
-          'estado': data['estado'],
-          'tiempoMax': data['tiempoMax'],
-          'categoria': data['categoria'],
-          'tipoEquipo': tipoEquipo,
-          'fecha_devolucion': data['fecha_devolucion'],
-        };
-      }).where((equipo) => equipo != null).cast<Map<String, dynamic>>().toList();
+            return {
+              'id': doc.id,
+              'nombre': data['nombre'],
+              'descripcion': data['descripcion'],
+              'imagenes': List<String>.from(data['imagenes']),
+              'estado': data['estado'],
+              'tiempoMax': data['tiempoMax'],
+              'categoria': data['categoria'],
+              'tipoEquipo': tipoEquipo,
+              'fecha_devolucion': data['fecha_devolucion'],
+            };
+          })
+          .where((equipo) => equipo != null)
+          .cast<Map<String, dynamic>>()
+          .toList();
     });
   }
 
@@ -106,7 +109,8 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       // Inicia una transacción
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         // Obtén el documento del equipo dentro de la transacción
-        final equipoDocRef = FirebaseFirestore.instance.collection('equipos').doc(equipoId);
+        final equipoDocRef =
+            FirebaseFirestore.instance.collection('equipos').doc(equipoId);
         final snapshot = await transaction.get(equipoDocRef);
 
         if (!snapshot.exists) {
@@ -124,7 +128,8 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
         // Cambia el estado a "Pendiente" y añade el timestamp
         transaction.update(equipoDocRef, {
           'estado': 'Pendiente',
-          'timestamp_solicitud': FieldValue.serverTimestamp(), // Marca el momento de la solicitud
+          'timestamp_solicitud':
+              FieldValue.serverTimestamp(), // Marca el momento de la solicitud
         });
       });
 
@@ -146,17 +151,18 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .collection('equipos_a_cargo')
-          .doc(equipo['id'])
-          .set(equipoConFechas);
+            .collection('usuarios')
+            .doc(user.uid)
+            .collection('equipos_a_cargo')
+            .doc(equipo['id'])
+            .set(equipoConFechas);
       }
 
       Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${equipo["nombre"]} añadido a equipos a cargo.")),
+        SnackBar(
+            content: Text("${equipo["nombre"]} añadido a equipos a cargo.")),
       );
     } catch (e) {
       // Si ocurre un error (por ejemplo, equipo ya en uso)
@@ -166,7 +172,6 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     }
     _loadEquiposDesdeFirestore();
   }
-
 
   void _mostrarDetalles(BuildContext context, Map<String, dynamic> equipo) {
     showModalBottomSheet(
@@ -190,7 +195,8 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                 children: [
                   // Carrusel con bordes
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
                     child: CarouselSlider(
                       options: CarouselOptions(
                         height: 250,
@@ -200,7 +206,8 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                       ),
                       items: (equipo["imagenes"] as List).isNotEmpty
                           ? equipo["imagenes"].map<Widget>((img) {
-                              return Image.network(img, fit: BoxFit.cover, width: double.infinity);
+                              return Image.network(img,
+                                  fit: BoxFit.cover, width: double.infinity);
                             }).toList()
                           : [const Icon(Icons.broken_image, size: 200)],
                     ),
@@ -213,12 +220,14 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                       children: [
                         Text(
                           equipo["nombre"],
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           equipo["descripcion"],
-                          style: const TextStyle(fontSize: 16, color: Colors.black87),
+                          style: const TextStyle(
+                              fontSize: 16, color: Colors.black87),
                         ),
                         const SizedBox(height: 20),
 
@@ -239,10 +248,6 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                             const SizedBox(width: 12),
                             const Icon(Icons.timer, color: Colors.grey),
                             const SizedBox(width: 4),
-                            Text(
-                              "Máx. ${equipo["tiempoMax"]} horas",
-                              style: const TextStyle(fontSize: 14, color: Colors.black54),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 30),
@@ -257,7 +262,8 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                               label: const Text("Añadir equipo"),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.orange.shade600,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -298,18 +304,22 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
             child: Text(
               "Usuario bloqueado, no puede solicitar equipos. Acérquese a la oficina de equipos para regular su estado.",
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
         ),
       );
     }
 
-    final categoriasUnicas = equipos.map((e) => e["categoria"] as String).toSet().toList();
+    final categoriasUnicas =
+        equipos.map((e) => e["categoria"] as String).toSet().toList();
 
     final equiposFiltrados = equipos.where((equipo) {
-      final coincideBusqueda = equipo["nombre"].toLowerCase().contains(searchQuery.toLowerCase());
-      final coincideCategoria = categoriaSeleccionada == null || equipo["categoria"] == categoriaSeleccionada;
+      final coincideBusqueda =
+          equipo["nombre"].toLowerCase().contains(searchQuery.toLowerCase());
+      final coincideCategoria = categoriaSeleccionada == null ||
+          equipo["categoria"] == categoriaSeleccionada;
       final esDisponible = equipo["estado"] == "Disponible";
       final coincideDisponibilidad = disponibilidadSeleccionada == null ||
           (disponibilidadSeleccionada == "Disponible" && esDisponible) ||
@@ -338,7 +348,8 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
               decoration: InputDecoration(
                 hintText: "Buscar equipos...",
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onChanged: (query) {
                 setState(() {
@@ -382,8 +393,10 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                     ),
                     items: const [
                       DropdownMenuItem(value: null, child: Text("Todas")),
-                      DropdownMenuItem(value: "Disponible", child: Text("Disponible")),
-                      DropdownMenuItem(value: "No disponible", child: Text("No disponible")),
+                      DropdownMenuItem(
+                          value: "Disponible", child: Text("Disponible")),
+                      DropdownMenuItem(
+                          value: "No disponible", child: Text("No disponible")),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -401,12 +414,14 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                   : categoriasAgrupadas.isEmpty
                       ? const Center(child: Text("No se encontraron equipos."))
                       : ListView(
-                          children: categoriasAgrupadas.entries.map((categoria) {
+                          children:
+                              categoriasAgrupadas.entries.map((categoria) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   child: Text(
                                     categoria.key,
                                     style: const TextStyle(
@@ -419,79 +434,112 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                 ...categoria.value.map((equipo) {
                                   return Card(
                                     elevation: 3,
-                                    margin: const EdgeInsets.symmetric(vertical: 6),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 6),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(12),
-                                      onTap: () => _mostrarDetalles(context, equipo),
+                                      onTap: () =>
+                                          _mostrarDetalles(context, equipo),
                                       child: Padding(
                                         padding: const EdgeInsets.all(12),
                                         child: Row(
                                           children: [
                                             ClipRRect(
-                                              borderRadius: BorderRadius.circular(10),
-                                              child: equipo["imagenes"].isNotEmpty
-                                                  ? Image.network(
-                                                      equipo["imagenes"][0],
-                                                      width: 60,
-                                                      height: 60,
-                                                      fit: BoxFit.cover,
-                                                    )
-                                                  : const Icon(Icons.broken_image, size: 60, color: Colors.grey),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child:
+                                                  equipo["imagenes"].isNotEmpty
+                                                      ? Image.network(
+                                                          equipo["imagenes"][0],
+                                                          width: 60,
+                                                          height: 60,
+                                                          fit: BoxFit.cover,
+                                                        )
+                                                      : const Icon(
+                                                          Icons.broken_image,
+                                                          size: 60,
+                                                          color: Colors.grey),
                                             ),
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Row(
                                                     children: [
                                                       Expanded(
                                                         child: Text(
                                                           equipo["nombre"],
-                                                          style: const TextStyle(
+                                                          style:
+                                                              const TextStyle(
                                                             fontSize: 16,
-                                                            fontWeight: FontWeight.w600,
+                                                            fontWeight:
+                                                                FontWeight.w600,
                                                           ),
                                                         ),
                                                       ),
-                                                      if (equipo["tipoEquipo"] == "premium" &&
-                                                          (_puntosUsuario ?? 0) >= 15)
-                                                        const Icon(Icons.star, color: Colors.amber, size: 18),
+                                                      if (equipo["tipoEquipo"] ==
+                                                              "premium" &&
+                                                          (_puntosUsuario ??
+                                                                  0) >=
+                                                              15)
+                                                        const Icon(Icons.star,
+                                                            color: Colors.amber,
+                                                            size: 18),
                                                     ],
                                                   ),
                                                   const SizedBox(height: 4),
                                                   Text(
                                                     equipo["descripcion"],
                                                     maxLines: 2,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: const TextStyle(color: Colors.black54),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                        color: Colors.black54),
                                                   ),
                                                 ],
                                               ),
                                             ),
                                             const SizedBox(width: 10),
                                             Column(
-                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
                                               children: [
                                                 Chip(
                                                   label: Text(
                                                     equipo["estado"],
-                                                    style: const TextStyle(color: Colors.white),
+                                                    style: const TextStyle(
+                                                        color: Colors.white),
                                                   ),
-                                                  backgroundColor: equipo["estado"] == "Disponible"
-                                                      ? Colors.green
-                                                      : equipo["estado"] == "En Uso"
-                                                          ? Colors.orange
-                                                          : Colors.red,
+                                                  backgroundColor:
+                                                      equipo["estado"] ==
+                                                              "Disponible"
+                                                          ? Colors.green
+                                                          : equipo["estado"] ==
+                                                                  "En Uso"
+                                                              ? Colors.orange
+                                                              : Colors.red,
                                                 ),
                                                 // Solo muestra el tiempo si está en uso y tiene fecha_devolucion
-                                                if (equipo["estado"] == "En Uso" && equipo["fecha_devolucion"] != null)
+                                                if (equipo["estado"] ==
+                                                        "En Uso" &&
+                                                    equipo["fecha_devolucion"] !=
+                                                        null)
                                                   Padding(
-                                                    padding: const EdgeInsets.only(top: 4),
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            top: 4),
                                                     child: Text(
-                                                      "Restante: ${calcularTiempoRestante(equipo["fecha_devolucion"])}",
-                                                      style: const TextStyle(fontSize: 12, color: Colors.orange),
+                                                      "Días restantes: ${calcularTiempoRestante(equipo["fecha_devolucion"])}",
+                                                      style: const TextStyle(
+                                                          fontSize: 13,
+                                                          color: Colors.orange,
+                                                          fontWeight:
+                                                              FontWeight.bold),
                                                     ),
                                                   ),
                                               ],

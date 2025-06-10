@@ -27,7 +27,7 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   String emailUsuario = "";
   String fechaPrestamo = "";
   String fechaDevolucion = "";
-  String? trabajoSeleccionado = 'Trabajo a realizar 1';
+  String? trabajoSeleccionado;
   bool isLoading = true;
   bool _enviando = false;
 
@@ -43,31 +43,31 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   @override
   void initState() {
     super.initState();
+    trabajoSeleccionado = trabajos.first['nombre'] as String;
     _cargarDatosUsuario();
-    _ajustarFechasPorTrabajo(trabajoSeleccionado ?? trabajos.first['nombre']);
+    _ajustarFechasPorTrabajo(trabajoSeleccionado!);
   }
 
   void _ajustarFechasPorTrabajo(String? trabajoNombre) {
-    final trabajo = trabajos.firstWhere((t) => t['nombre'] == trabajoNombre);
+    final trabajo = trabajos.firstWhere(
+      (t) => t['nombre'] == trabajoNombre,
+      orElse: () => trabajos.first,
+    );
     final ahora = DateTime.now();
     final duracion = trabajo['duracion'] as Duration;
     final fechaDevolucionDT = ahora.add(duracion);
-
-    final format = DateFormat('dd/MM/yyyy HH:mm');
+    final format = DateFormat('dd/MM/yyyy');
     fechaPrestamo = format.format(ahora);
-
-    if (duracion.inHours < 24) {
-      fechaDevolucion = format.format(fechaDevolucionDT);
-    } else {
-      final formatDay = DateFormat('dd/MM/yyyy');
-      fechaDevolucion = formatDay.format(fechaDevolucionDT);
-    }
+    fechaDevolucion = format.format(fechaDevolucionDT);
   }
 
   Future<void> _cargarDatosUsuario() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get();
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
       if (userDoc.exists) {
         setState(() {
           nombreUsuario = userDoc["nombre"] ?? "";
@@ -84,52 +84,58 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   Future<void> _enviarSolicitud() async {
     setState(() => _enviando = true);
 
-      if (trabajoSeleccionado != null) {
-        _ajustarFechasPorTrabajo(trabajoSeleccionado);
-      }
+    // Busca el trabajo seleccionado para extraer la duración en días
+    final trabajo = trabajos.firstWhere(
+      (t) => t['nombre'] == trabajoSeleccionado,
+      orElse: () => trabajos.first,
+    );
+    final diasPrestamo = (trabajo['duracion'] as Duration).inDays;
 
-  
-      try {
-        User? user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          final equipos = CarritoEquipos().equipos;
+    if (trabajoSeleccionado != null) {
+      _ajustarFechasPorTrabajo(trabajoSeleccionado);
+    }
 
-          // Convierte la fecha a DateTime y luego a Timestamp
-          Timestamp fechaDevolucionTS;
-          try {
-            // Usa el formato que generas en _ajustarFechasPorTrabajo
-            fechaDevolucionTS = Timestamp.fromDate(
-              DateFormat(fechaDevolucion.contains(':') ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy').parse(fechaDevolucion),
-            );
-          } catch (e) {
-            fechaDevolucionTS = Timestamp.now(); // fallback de emergencia
-          }
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final equipos = CarritoEquipos().equipos;
 
-          await FirebaseFirestore.instance.collection('solicitudes').add({
-            'uid': user.uid,
-            'nombre': nombreUsuario,
-            'email': emailUsuario,
-            'dni': dniUsuario,
-            'celular': celularUsuario,
-            'tipoUsuario': tipoUsuario,
-            'asignatura': asignaturaController.text,
-            'trabajo': trabajoController.text,
-            'docente': docenteController.text,
-            'lugar': lugarController.text,
-            'hora_salida': horaSalidaController.text,
-            'fecha_prestamo': fechaPrestamo,
-            'fecha_devolucion': fechaDevolucion,
-            'fecha_envio': Timestamp.now(),
-            'equipos': equipos,
-          });
+        // Convierte la fecha a DateTime y luego a Timestamp
+        Timestamp fechaDevolucionTS;
+        try {
+          fechaDevolucionTS = Timestamp.fromDate(
+            DateFormat('dd/MM/yyyy').parse(fechaDevolucion),
+          );
+        } catch (e) {
+          fechaDevolucionTS = Timestamp.now();
+        }
 
-          // Enviar correo al usuario
-          await _enviarCorreoConfirmacion(emailUsuario, equipos);
+        await FirebaseFirestore.instance.collection('solicitudes').add({
+          'uid': user.uid,
+          'nombre': nombreUsuario,
+          'email': emailUsuario,
+          'dni': dniUsuario,
+          'celular': celularUsuario,
+          'tipoUsuario': tipoUsuario,
+          'asignatura': asignaturaController.text,
+          'trabajo': trabajoController.text,
+          'docente': docenteController.text,
+          'lugar': lugarController.text,
+          'hora_salida': horaSalidaController.text,
+          'fecha_prestamo': fechaPrestamo,
+          'fecha_devolucion': fechaDevolucionTS,
+          'fecha_envio': Timestamp.now(),
+          'equipos': equipos,
+          'dias_prestamo': diasPrestamo,
+        });
 
-          // Solo muestra el mensaje de éxito cuando todo termina
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Solicitud enviada correctamente")),
+        // Enviar correo al usuario
+        await _enviarCorreoConfirmacion(emailUsuario, equipos);
+
+        // Solo muestra el mensaje de éxito cuando todo termina
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Solicitud enviada correctamente")),
           );
           Navigator.pop(context, true); // Volver atrás
         }
@@ -145,7 +151,8 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     }
   }
 
-  Future<void> _enviarCorreoConfirmacion(String destinatario, List<Map<String, dynamic>> equipos) async {
+  Future<void> _enviarCorreoConfirmacion(
+      String destinatario, List<Map<String, dynamic>> equipos) async {
     // Usa tu correo institucional o de servicio habilitado para SMTP
     String username = 'kenss12345@gmail.com';
     String password = 'qsex cejw glnq namr';
@@ -153,7 +160,9 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     final smtpServer = gmail(username, password);
 
     // Construye el contenido de los equipos solicitados
-    String contenidoEquipos = equipos.map((e) => "- ${e['nombre']} (${e['estado_prestamo']})").join("\n");
+    String contenidoEquipos = equipos
+        .map((e) => "- ${e['nombre']} (${e['estado_prestamo']})")
+        .join("\n");
 
     // Construye el contenido del mensaje
     final message = Message()
@@ -193,20 +202,20 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
 
   final List<Map<String, dynamic>> trabajos = [
     {
-      'nombre': 'Trabajo a realizar 1',
-      'duracion': Duration(days: 2), // 2 días
+      'nombre': 'Trabajo a realizar 1 (1 día)',
+      'duracion': Duration(days: 1),
     },
     {
-      'nombre': 'Trabajo a realizar 2',
-      'duracion': Duration(hours: 5), // 5 horas
+      'nombre': 'Trabajo a realizar 2 (2 días)',
+      'duracion': Duration(days: 2),
     },
     {
-      'nombre': 'Trabajo a realizar 3',
-      'duracion': Duration(days: 1), // 1 día
+      'nombre': 'Trabajo a realizar 3 (3 días)',
+      'duracion': Duration(days: 3),
     },
     {
-      'nombre': 'Trabajo a realizar 4',
-      'duracion': Duration(days: 5), // 5 días
+      'nombre': 'Trabajo a realizar 4 (5 días)',
+      'duracion': Duration(days: 5),
     },
   ];
 
@@ -223,137 +232,174 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           body: isLoading
               ? const Center(child: CircularProgressIndicator())
               : AbsorbPointer(
-                absorbing: _enviando, // <- desactiva taps cuando está enviando
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Form(
-                    key: _formKey,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionCard(
-                            title: "Datos del Estudiante",
-                            children: [
-                              _buildTextField(label: "Nombre", initialValue: nombreUsuario, enabled: false),
-                              _buildTextField(label: "DNI", initialValue: dniUsuario, enabled: false),
-                              _buildTextField(label: "Celular", initialValue: celularUsuario, enabled: false),
-                              _buildTextField(label: "Email", initialValue: emailUsuario, enabled: false),
-                              _buildTextField(label: "Tipo de Usuario", initialValue: tipoUsuario, enabled: false),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _buildSectionCard(
-                            title: "Detalles de la Solicitud",
-                            children: [
-                              _buildTextField(label: "Asignatura", controller: asignaturaController),
-
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: DropdownButtonFormField<String>(
-                                  value: trabajoSeleccionado,
-                                  decoration: const InputDecoration(
-                                    labelText: "Trabajo a Realizar",
-                                    border: OutlineInputBorder(),
+                  absorbing:
+                      _enviando, // <- desactiva taps cuando está enviando
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Form(
+                      key: _formKey,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionCard(
+                              title: "Datos del Estudiante",
+                              children: [
+                                _buildTextField(
+                                    label: "Nombre",
+                                    initialValue: nombreUsuario,
+                                    enabled: false),
+                                _buildTextField(
+                                    label: "DNI",
+                                    initialValue: dniUsuario,
+                                    enabled: false),
+                                _buildTextField(
+                                    label: "Celular",
+                                    initialValue: celularUsuario,
+                                    enabled: false),
+                                _buildTextField(
+                                    label: "Email",
+                                    initialValue: emailUsuario,
+                                    enabled: false),
+                                _buildTextField(
+                                    label: "Tipo de Usuario",
+                                    initialValue: tipoUsuario,
+                                    enabled: false),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildSectionCard(
+                              title: "Detalles de la Solicitud",
+                              children: [
+                                _buildTextField(
+                                    label: "Asignatura",
+                                    controller: asignaturaController),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: DropdownButtonFormField<String>(
+                                    value: trabajoSeleccionado,
+                                    decoration: const InputDecoration(
+                                      labelText: "Trabajo a Realizar",
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: trabajos.map((t) {
+                                      return DropdownMenuItem<String>(
+                                        value: t['nombre'] as String,
+                                        child: Text(t['nombre'] as String),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        trabajoSeleccionado = value;
+                                        _ajustarFechasPorTrabajo(value);
+                                        trabajoController.text = value ?? "";
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Selecciona el trabajo a realizar";
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                  items: trabajos.map((t) {
-                                    return DropdownMenuItem<String>(
-                                      value: t['nombre'] as String,
-                                      child: Text(t['nombre'] as String),
+                                ),
+                                _buildTextField(
+                                    label: "Docente a Cargo",
+                                    controller: docenteController),
+                                _buildTextField(
+                                    label: "Lugar de Trabajo",
+                                    controller: lugarController),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text("Entrega: $fechaPrestamo",
+                                          style: TextStyle(fontSize: 16)),
+                                      SizedBox(height: 4),
+                                      Text("Devolución: $fechaDevolucion",
+                                          style: TextStyle(fontSize: 16)),
+                                    ],
+                                  ),
+                                ),
+                                _buildTextField(
+                                  label: "Hora de Salida del Equipo",
+                                  controller: horaSalidaController,
+                                  enabled: true,
+                                  onTap: () async {
+                                    final timeOfDay = await showTimePicker(
+                                      context: context,
+                                      initialTime: TimeOfDay.now(),
                                     );
-                                  }).toList(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      trabajoSeleccionado = value;
-                                      _ajustarFechasPorTrabajo(value);
-                                      trabajoController.text = value ?? "";
-                                    });
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Selecciona el trabajo a realizar";
+
+                                    if (timeOfDay != null) {
+                                      final formattedTime =
+                                          timeOfDay.format(context);
+                                      setState(() {
+                                        horaSalidaController.text =
+                                            formattedTime;
+                                      });
                                     }
-                                    return null;
                                   },
-                                ),
-                              ),
-
-                              _buildTextField(label: "Docente a Cargo", controller: docenteController),
-                              _buildTextField(label: "Lugar de Trabajo", controller: lugarController),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Entrega: $fechaPrestamo", style: TextStyle(fontSize: 16)),
-                                    SizedBox(height: 4),
-                                    Text("Devolución: $fechaDevolucion", style: TextStyle(fontSize: 16)),
-                                  ],
-                                ),
-                              ),
-                              _buildTextField(
-                                label: "Hora de Salida del Equipo",
-                                controller: horaSalidaController,
-                                enabled: true,
-                                onTap: () async {
-                                  final timeOfDay = await showTimePicker(
-                                    context: context,
-                                    initialTime: TimeOfDay.now(),
-                                  );
-
-                                  if (timeOfDay != null) {
-                                    final formattedTime = timeOfDay.format(context);
-                                    setState(() {
-                                      horaSalidaController.text = formattedTime;
-                                    });
-                                  }
-                                },
-                              )
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _buildSectionCard(
-                            title: "Equipos Seleccionados",
-                            children: equiposSeleccionados.map((equipo) {
-                              return Card(
-                                elevation: 2,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                child: ListTile(
-                                  leading: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(equipo["imagen"], width: 50, height: 50, fit: BoxFit.cover),
+                                )
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildSectionCard(
+                              title: "Equipos Seleccionados",
+                              children: equiposSeleccionados.map((equipo) {
+                                return Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  child: ListTile(
+                                    leading: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(equipo["imagen"],
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover),
+                                    ),
+                                    title: Text(equipo["nombre"]),
+                                    subtitle: Text(
+                                        "Estado: ${equipo["estado_prestamo"]}"),
                                   ),
-                                  title: Text(equipo["nombre"]),
-                                  subtitle: Text("Estado: ${equipo["estado_prestamo"]}"),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 20),
-                          Center(
-                            child: _enviando /*ElevatedButton(*/
-                              ? const CircularProgressIndicator()
-                              : ElevatedButton(
-                                onPressed: () {
-                                  if (_formKey.currentState!.validate()) {
-                                    _enviarSolicitud();
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                child: const Text("Enviar Solicitud", style: TextStyle(fontSize: 16, color: Colors.white)),
-                              ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 20),
+                            Center(
+                              child: _enviando /*ElevatedButton(*/
+                                  ? const CircularProgressIndicator()
+                                  : ElevatedButton(
+                                      onPressed: () {
+                                        if (_formKey.currentState!.validate()) {
+                                          _enviarSolicitud();
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.orange,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 40, vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                      ),
+                                      child: const Text("Enviar Solicitud",
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.white)),
+                                    ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
         ),
 
         // Overlay que bloquea taps, muestra loader y oscurece la pantalla
@@ -397,7 +443,13 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   }
 
   // Método reutilizable para construir los campos de entrada
-  Widget _buildTextField({required String label, TextEditingController? controller, String? initialValue, bool enabled = true, VoidCallback? onTap,}) {
+  Widget _buildTextField({
+    required String label,
+    TextEditingController? controller,
+    String? initialValue,
+    bool enabled = true,
+    VoidCallback? onTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
@@ -420,7 +472,8 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     );
   }
 
-  Widget _buildSectionCard({required String title, required List<Widget> children}) {
+  Widget _buildSectionCard(
+      {required String title, required List<Widget> children}) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 3,
@@ -429,7 +482,11 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange[800])),
+            Text(title,
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange[800])),
             const SizedBox(height: 12),
             ...children,
           ],
