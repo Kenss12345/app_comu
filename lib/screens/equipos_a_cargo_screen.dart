@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:app_comu/utils/carrito_equipos.dart';
+import 'package:intl/intl.dart';
 
 class EquiposACargoScreen extends StatefulWidget {
   const EquiposACargoScreen({super.key});
@@ -19,6 +20,25 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   bool solicitudRealizada = false;
   bool haySolicitudPendiente = false;
   bool hayEquiposEnUso = false;
+
+  Future<String> _obtenerFechaDevolucionGlobal(String equipoId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('equipos')
+        .doc(equipoId)
+        .get();
+    if (doc.exists &&
+        doc.data() != null &&
+        doc.data()!.containsKey("fecha_devolucion")) {
+      final fd = doc.data()!["fecha_devolucion"];
+      if (fd is String) {
+        return fd;
+      } else if (fd is Timestamp) {
+        // Opcional: adapta el formato si lo guardas como Timestamp
+        return fd.toDate().toIso8601String();
+      }
+    }
+    return "No disponible";
+  }
 
   //cargar desde Firestore:
   Future<void> _cargarEquiposDesdeFirestore() async {
@@ -241,9 +261,36 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                                       .toLowerCase() ==
                                   "en uso") ...[
                                 Text(
-                                    "📅 Préstamo: ${equipo["fecha_prestamo"]}"),
-                                Text(
-                                    "📆 Devolución: ${equipo["fecha_devolucion"]}"),
+                                    "📅 Préstamo: ${equipo["fecha_prestamo"] ?? ""}"),
+                                FutureBuilder<String>(
+                                  future: _obtenerFechaDevolucionGlobal(
+                                      equipo['id']),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return const Text(
+                                          "📆 Devolución: Cargando...");
+                                    }
+                                    if (snapshot.hasError) {
+                                      return const Text("📆 Devolución: Error");
+                                    }
+                                    final fechaRaw =
+                                        snapshot.data ?? "No disponible";
+                                    String fechaFormateada = fechaRaw;
+
+                                    // Intentar formatear si es fecha ISO
+                                    try {
+                                      final dt = DateTime.parse(fechaRaw);
+                                      fechaFormateada =
+                                          DateFormat('dd/MM/yyyy').format(dt);
+                                    } catch (_) {
+                                      // Si no se puede parsear, deja el texto tal como está (útil si dice "No disponible")
+                                    }
+
+                                    return Text(
+                                        "📆 Devolución: $fechaFormateada");
+                                  },
+                                ),
                               ],
                               const SizedBox(height: 4),
                               Text(

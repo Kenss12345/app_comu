@@ -527,7 +527,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                                 // Solo muestra el tiempo si está en uso y tiene fecha_devolucion
                                                 if (equipo["estado"] ==
                                                         "En Uso" &&
-                                                    equipo["fecha_devolucion"] !=
+                                                    equipo["fecha_devolucion"] != 
                                                         null)
                                                   Padding(
                                                     padding:
