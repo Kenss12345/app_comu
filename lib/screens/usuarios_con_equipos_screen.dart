@@ -513,20 +513,43 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                 ],
               ),
               const SizedBox(height: 18),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: "Buscar por nombre del solicitante...",
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onChanged: (valor) {
-                  setState(() {
-                    filtroNombreSolicitante = valor.trim().toLowerCase();
-                  });
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: "Buscar por nombre del solicitante...",
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onChanged: (valor) {
+                        setState(() {
+                          filtroNombreSolicitante = valor.trim().toLowerCase();
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 180,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: "Buscar por DNI...",
+                        prefixIcon: const Icon(Icons.credit_card),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (valor) {
+                        setState(() {
+                          filtroDni = valor.trim();
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 18),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -542,7 +565,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                     }
                     var solicitudes = snapshot.data?.docs ?? [];
 
-                    // FILTRO POR NOMBRE DE SOLICITANTE
+                    // FILTRO POR NOMBRE DE SOLICITANTE y por DNI
                     if (filtroNombreSolicitante.isNotEmpty) {
                       solicitudes = solicitudes.where((doc) {
                         final nombre =
@@ -550,7 +573,12 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                         return nombre.contains(filtroNombreSolicitante);
                       }).toList();
                     }
-
+                    if (filtroDni.isNotEmpty) {
+                      solicitudes = solicitudes.where((doc) {
+                        final dni = (doc['dni'] ?? '').toString();
+                        return dni.contains(filtroDni);
+                      }).toList();
+                    }
                     // ORDENAR POR FECHA ENVIO
                     solicitudes.sort((a, b) {
                       final tsA = a['fecha_envio'];
@@ -656,11 +684,49 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   // Mostrar detalles de la solicitud
-  void _mostrarDetallesSolicitud(
-      BuildContext context, QueryDocumentSnapshot solicitud) {
+  Future<void> _mostrarDetallesSolicitud(
+      BuildContext context, QueryDocumentSnapshot solicitud) async {
     final data = solicitud.data() as Map<String, dynamic>;
     final equipos = data['equipos'] as List? ?? [];
     final equiposList = equipos.map((e) => e['nombre']).join(', ');
+
+    // Formatea fechas
+    final fechaEnvio = data['fecha_envio'];
+    String fechaEnvioStr = "---";
+    if (fechaEnvio is Timestamp) {
+      fechaEnvioStr = DateFormat('dd/MM/yyyy').format(fechaEnvio.toDate());
+    } else if (fechaEnvio is String) {
+      fechaEnvioStr = fechaEnvio;
+    }
+
+    final fechaDevolucion = data['fecha_devolucion'];
+    String fechaDevolucionStr = "---";
+    if (fechaDevolucion is Timestamp) {
+      fechaDevolucionStr =
+          DateFormat('dd/MM/yyyy').format(fechaDevolucion.toDate());
+    } else if (fechaDevolucion is String) {
+      fechaDevolucionStr = fechaDevolucion;
+    }
+
+    // Consulta datos extra del equipo
+    String categoria = "---";
+    String codigoUC = "---";
+    String descripcion = "---";
+    if (equipos.isNotEmpty && equipos[0]?['id'] != null) {
+      final equipoId = equipos[0]['id'];
+      try {
+        final equipoDoc = await FirebaseFirestore.instance
+            .collection('equipos')
+            .doc(equipoId)
+            .get();
+        if (equipoDoc.exists) {
+          final equipoData = equipoDoc.data();
+          categoria = equipoData?['categoria'] ?? "---";
+          codigoUC = equipoData?['codigoUC'] ?? "---";
+          descripcion = equipoData?['descripcion'] ?? "---";
+        }
+      } catch (_) {}
+    }
 
     showDialog(
       context: context,
@@ -671,11 +737,60 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Nombre: ${data['nombre']}"),
-              Text("Equipo(s): $equiposList"),
-              Text(
-                  "Fecha de solicitud: ${data['fecha_envio'] != null && data['fecha_envio'] is Timestamp ? (data['fecha_envio'] as Timestamp).toDate().toString() : '---'}"),
-              Text("Fecha de devolución: ${data['fecha_devolucion'] ?? '---'}"),
+              Row(children: [
+                Icon(Icons.person, color: Colors.blueGrey),
+                SizedBox(width: 8),
+                Text("Nombre: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(child: Text(data['nombre'] ?? '---')),
+              ]),
+              SizedBox(height: 8),
+              Row(children: [
+                Icon(Icons.devices, color: Colors.deepPurple),
+                SizedBox(width: 8),
+                Text("Equipo(s): ",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(child: Text(equiposList)),
+              ]),
+              SizedBox(height: 8),
+              Row(children: [
+                Icon(Icons.event, color: Colors.orange),
+                SizedBox(width: 8),
+                Text("Fecha solicitud: ",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(child: Text(fechaEnvioStr)),
+              ]),
+              SizedBox(height: 8),
+              Row(children: [
+                Icon(Icons.event_available, color: Colors.green),
+                SizedBox(width: 8),
+                Text("Fecha devolución: ",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(child: Text(fechaDevolucionStr)),
+              ]),
+              SizedBox(height: 8),
+              Row(children: [
+                Icon(Icons.category, color: Colors.brown),
+                SizedBox(width: 8),
+                Text("Categoría: ",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(child: Text(categoria)),
+              ]),
+              SizedBox(height: 8),
+              Row(children: [
+                Icon(Icons.qr_code, color: Colors.black45),
+                SizedBox(width: 8),
+                Text("Código UC: ",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(child: Text(codigoUC)),
+              ]),
+              SizedBox(height: 8),
+              Row(children: [
+                Icon(Icons.description, color: Colors.teal),
+                SizedBox(width: 8),
+                Text("Descripción: ",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Flexible(child: Text(descripcion)),
+              ]),
             ],
           ),
           actions: [
@@ -731,34 +846,47 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
       final uidSolicitante = solicitud['uid'] as String;
 
       for (var equipo in equipos) {
-        // Convierte a Timestamp si es String, o usa directo si ya es Timestamp
-        dynamic fechaDevolucion = solicitud['fecha_devolucion'];
-        Timestamp? fechaDevolucionTS;
-        if (fechaDevolucion is Timestamp) {
-          fechaDevolucionTS = fechaDevolucion;
-        } else if (fechaDevolucion is String) {
+        // Fecha de solicitud (del campo 'fecha_envio' de la solicitud)
+        dynamic fechaSolicitud = solicitud['fecha_envio'];
+        DateTime? dtSolicitud;
+        if (fechaSolicitud is Timestamp) {
+          dtSolicitud = fechaSolicitud.toDate();
+        } else if (fechaSolicitud is String) {
           try {
-            // Intenta leer como dd/MM/yyyy HH:mm, si tienes hora; o dd/MM/yyyy si no
-            DateTime dt;
-            if (fechaDevolucion.contains(":")) {
-              dt = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
-            } else {
-              dt = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
-            }
-            fechaDevolucionTS = Timestamp.fromDate(dt);
-          } catch (e) {
-            fechaDevolucionTS = null;
-          }
+            dtSolicitud = DateTime.parse(fechaSolicitud);
+          } catch (_) {}
         }
+
+        // Fechas
+        final fechaPrestamoNow = DateTime.now();
+        final fechaDevolucionNow =
+            fechaPrestamoNow.add(Duration(days: diasPrestamo));
+        final fechaPrestamoStr =
+            DateFormat('dd/MM/yyyy').format(fechaPrestamoNow);
+        final fechaDevolucionStr =
+            DateFormat('dd/MM/yyyy').format(fechaDevolucionNow);
+
+        // ACTUALIZA LA COLECCIÓN GLOBAL EQUIPOS
         await FirebaseFirestore.instance
             .collection('equipos')
             .doc(equipo['id'])
             .update({
           'estado': accion == "Aceptada" ? "En Uso" : "Disponible",
-          if (accion == "Aceptada") 'fecha_devolucion': fechaDevolucionStr,
-          if (accion == "Rechazada") 'fecha_devolucion': null,
+          if (accion == "Aceptada") ...{
+            'fecha_solicitud': dtSolicitud != null
+                ? DateFormat('dd/MM/yyyy').format(dtSolicitud)
+                : null,
+            'fecha_prestamo': fechaPrestamoStr,
+            'fecha_devolucion': fechaDevolucionStr,
+          },
+          if (accion == "Rechazada") ...{
+            'fecha_solicitud': null,
+            'fecha_prestamo': null,
+            'fecha_devolucion': null,
+          },
         });
 
+        // ACTUALIZA LA SUBCOLECCIÓN DEL USUARIO
         final docRef = FirebaseFirestore.instance
             .collection('usuarios')
             .doc(uidSolicitante)
@@ -768,7 +896,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         if (accion == "Aceptada") {
           await docRef.update({
             'estado_prestamo': "En uso",
-            'fecha_prestamo': fechaPrestamo.toIso8601String(),
+            'fecha_prestamo': fechaPrestamoStr,
             'fecha_devolucion': fechaDevolucionStr,
           });
         } else if (accion == "Rechazada") {

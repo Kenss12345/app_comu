@@ -129,6 +129,18 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           'dias_prestamo': diasPrestamo,
         });
 
+        for (final equipo in equipos) {
+          await FirebaseFirestore.instance
+              .collection('equipos')
+              .doc(equipo['id'])
+              .update({
+            'fecha_solicitud':
+                Timestamp.now(),
+            'fecha_devolucion': fechaDevolucionTS,
+            'uid_prestamo': user.uid,
+          });
+        }
+
         // Enviar correo al usuario
         await _enviarCorreoConfirmacion(emailUsuario, equipos);
 

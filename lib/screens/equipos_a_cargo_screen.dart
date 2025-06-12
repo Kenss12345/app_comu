@@ -21,6 +21,24 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   bool haySolicitudPendiente = false;
   bool hayEquiposEnUso = false;
 
+  Future<String> _obtenerFechaPrestamoGlobal(String equipoId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('equipos')
+        .doc(equipoId)
+        .get();
+    if (doc.exists &&
+        doc.data() != null &&
+        doc.data()!.containsKey("fecha_prestamo")) {
+      final fp = doc.data()!["fecha_prestamo"];
+      if (fp is String) {
+        return fp;
+      } else if (fp is Timestamp) {
+        return fp.toDate().toIso8601String();
+      }
+    }
+    return "No disponible";
+  }
+
   Future<String> _obtenerFechaDevolucionGlobal(String equipoId) async {
     final doc = await FirebaseFirestore.instance
         .collection('equipos')
@@ -33,7 +51,7 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
       if (fd is String) {
         return fd;
       } else if (fd is Timestamp) {
-        // Opcional: adapta el formato si lo guardas como Timestamp
+        //adapta el formato si lo guardas como Timestamp
         return fd.toDate().toIso8601String();
       }
     }
@@ -260,8 +278,32 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                               if ((equipo["estado_prestamo"] ?? "")
                                       .toLowerCase() ==
                                   "en uso") ...[
-                                Text(
-                                    "📅 Préstamo: ${equipo["fecha_prestamo"] ?? ""}"),
+                                FutureBuilder<String>(
+                                  future:
+                                      _obtenerFechaPrestamoGlobal(equipo['id']),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return const Text(
+                                          "📅 Préstamo: Cargando...");
+                                    }
+                                    if (snapshot.hasError) {
+                                      return const Text("📅 Préstamo: Error");
+                                    }
+                                    final fechaRaw =
+                                        snapshot.data ?? "No disponible";
+                                    String fechaFormateada = fechaRaw;
+
+                                    try {
+                                      final dt = DateTime.parse(fechaRaw);
+                                      fechaFormateada =
+                                          DateFormat('dd/MM/yyyy').format(dt);
+                                    } catch (_) {}
+
+                                    return Text(
+                                        "📅 Préstamo: $fechaFormateada");
+                                  },
+                                ),
                                 FutureBuilder<String>(
                                   future: _obtenerFechaDevolucionGlobal(
                                       equipo['id']),

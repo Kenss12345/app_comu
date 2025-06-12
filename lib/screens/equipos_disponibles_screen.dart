@@ -125,22 +125,15 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
           throw Exception("El equipo ya no está disponible.");
         }
 
-        // Cambia el estado a "Pendiente" y añade el timestamp
+        // Cambia el estado a "Pendiente"
         transaction.update(equipoDocRef, {
           'estado': 'Pendiente',
-          'timestamp_solicitud':
-              FieldValue.serverTimestamp(), // Marca el momento de la solicitud
         });
       });
 
       // Si la transacción fue exitosa, añade el equipo a equipos a cargo
-      final DateTime ahora = DateTime.now();
-      final DateTime devolucion = ahora.add(Duration(days: 2));
-
       final equipoConFechas = {
         ...equipo,
-        "fecha_prestamo": ahora.toString().split(' ')[0],
-        "fecha_devolucion": devolucion.toString().split(' ')[0],
         "estado_prestamo": "Pendiente",
         "imagen": equipo['imagenes'].isNotEmpty ? equipo['imagenes'][0] : "",
       };
