@@ -3,6 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:app_comu/utils/carrito_equipos.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class EquiposDisponiblesScreen extends StatefulWidget {
   const EquiposDisponiblesScreen({super.key});
@@ -34,9 +35,14 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     if (fechaDevolucion == null) return "No disponible";
     DateTime? fecha;
     if (fechaDevolucion is String) {
+      // Primero intenta como ISO (yyyy-MM-dd), luego como dd/MM/yyyy
       try {
         fecha = DateTime.parse(fechaDevolucion);
-      } catch (_) {}
+      } catch (_) {
+        try {
+          fecha = DateFormat('dd/MM/yyyy').parse(fechaDevolucion);
+        } catch (_) {}
+      }
     } else if (fechaDevolucion is Timestamp) {
       fecha = fechaDevolucion.toDate();
     }
@@ -79,8 +85,17 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
             final data = doc.data();
             final tipoEquipo = data['tipoEquipo'] ?? 'normal';
 
-            // Si el equipo es premium y el usuario no tiene suficientes puntos, se omite
-            if (tipoEquipo == 'premium' && (_puntosUsuario ?? 0) < 15) {
+            // Filtra equipos según los puntos del usuario
+            if ((_puntosUsuario ?? 0) == 0) {
+              // No debe mostrarse ningún equipo
+              return null;
+            }
+            if (tipoEquipo == 'premium' && (_puntosUsuario ?? 0) < 20) {
+              // Solo los de 20 puntos o más ven premium
+              return null;
+            }
+            if (tipoEquipo == 'normal' && (_puntosUsuario ?? 0) < 1) {
+              // Solo los de 1 o más puntos ven normal
               return null;
             }
 
@@ -520,7 +535,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                                 // Solo muestra el tiempo si está en uso y tiene fecha_devolucion
                                                 if (equipo["estado"] ==
                                                         "En Uso" &&
-                                                    equipo["fecha_devolucion"] != 
+                                                    equipo["fecha_devolucion"] !=
                                                         null)
                                                   Padding(
                                                     padding:

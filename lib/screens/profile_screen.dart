@@ -140,17 +140,17 @@ class _ProfileContentState extends State<ProfileContent> {
   }
 
   Map<String, dynamic> getUserStatus(int puntos) {
-    if (puntos >= 15 && puntos <= 20) {
+    if (puntos == 20) {
       return {
         'tipo': 'Usuario Premium',
         'color': Colors.blue,
       };
-    } else if (puntos >= 8 && puntos <= 14) {
+    } else if (puntos >= 10 && puntos <= 19) {
       return {
         'tipo': 'Buen Usuario',
         'color': Colors.green,
       };
-    } else if (puntos >= 5 && puntos <= 7) {
+    } else if (puntos >= 5 && puntos <= 10) {
       return {
         'tipo': 'Usuario Regular',
         'color': Colors.yellow.shade700,
