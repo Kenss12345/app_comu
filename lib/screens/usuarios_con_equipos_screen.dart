@@ -53,27 +53,36 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
       if (equiposACargoSnap.docs.isNotEmpty) {
         final data = doc.data();
         // Para simplificar, solo muestra el primero (puedes mostrar todos si quieres)
-        final equipo = equiposACargoSnap.docs.first.data();
-        // Calcula tiempo restante si tienes fechas en el doc
-        DateTime? fechaDevolucion;
-        if (equipo['fecha_devolucion'] != null) {
-          try {
-            fechaDevolucion = DateTime.parse(equipo['fecha_devolucion']);
-          } catch (_) {}
+        for (final equipoDoc in equiposACargoSnap.docs) {
+          final equipo = equipoDoc.data();
+          final equipoId = equipoDoc.id;
+          if (equipoId == null || equipoId.isEmpty) continue;
+
+          // Calcula tiempo restante si tienes fechas en el doc
+          DateTime? fechaDevolucion;
+          if (equipo['fecha_devolucion'] != null) {
+            try {
+              fechaDevolucion =
+                  DateFormat('dd/MM/yyyy').parse(equipo['fecha_devolucion']);
+            } catch (_) {}
+          }
+          final tiempoRestante = fechaDevolucion != null
+              ? fechaDevolucion.difference(DateTime.now())
+              : Duration.zero;
+
+          lista.add({
+            'id': doc.id,
+            'nombre': data['nombre'],
+            'email': data['email'],
+            'celular': data['celular'],
+            'dni': data['dni'],
+            'equipo': equipo['nombre'] ?? 'Equipo no registrado',
+            'equipoId': equipoId,
+            'tiempo_restante': tiempoRestante,
+            'fechaDevolucion': equipo['fecha_devolucion'],
+            'fechaPrestamo': equipo['fecha_prestamo'],
+          });
         }
-        final tiempoRestante = fechaDevolucion != null
-            ? fechaDevolucion.difference(DateTime.now())
-            : Duration.zero;
-        lista.add({
-          'id': doc.id,
-          'nombre': data['nombre'],
-          'email': data['email'],
-          'celular': data['celular'],
-          'dni': data['dni'],
-          'equipo': equipo['nombre'] ?? 'Equipo no registrado',
-          'tiempo_restante': tiempoRestante,
-          'fechaDevolucion': equipo['fecha_devolucion'],
-        });
       }
     }
     setState(() {
@@ -285,6 +294,38 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     );
   }
 
+  Future<void> _devolverEquipo(String equipoId, String userId) async {
+    try {
+      // Cambia estado a Disponible y elimina fechas en colección equipos
+      await FirebaseFirestore.instance
+          .collection('equipos')
+          .doc(equipoId)
+          .update({
+        'estado': 'Disponible',
+        'fecha_devolucion': null,
+        'fecha_prestamo': null,
+        'fecha_solicitud': null,
+        'uid_prestamo': null,
+      });
+      // 2. Elimina subcolección equipos_a_cargo
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(userId)
+          .collection('equipos_a_cargo')
+          .doc(equipoId)
+          .delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Equipo devuelto correctamente.')),
+      );
+      await obtenerUsuarios(); // refresca la lista
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al devolver: $e')),
+      );
+    }
+  }
+
   int _dias(Duration dur) => dur.inDays.abs();
 
   // Pestaña de Usuarios con Equipos
@@ -450,11 +491,75 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                       style: const TextStyle(
                                           fontSize: 15, color: Colors.blueGrey),
                                     ),
+                                    Text(
+                                      "Fecha de préstamo: ${estudiante['fechaPrestamo'] ?? '---'}",
+                                      style: const TextStyle(
+                                          fontSize: 15, color: Colors.blueGrey),
+                                    ),
                                   ],
                                 ),
                               ),
-                              trailing: Icon(Icons.chevron_right,
-                                  color: Colors.orange.shade600, size: 32),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.chevron_right,
+                                        color: Colors.orange.shade600,
+                                        size: 32),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              DetallePrestamoScreen(
+                                                  estudiante: estudiante),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.assignment_return,
+                                        color: Colors.green.shade700),
+                                    tooltip: 'Devolver equipo',
+                                    onPressed: () async {
+                                      final confirmar = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: Text('Devolver equipo'),
+                                          content: Text(
+                                              '¿Estás seguro de devolver este equipo? Esta acción no se puede deshacer.'),
+                                          actions: [
+                                            TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(ctx, false),
+                                                child: Text('Cancelar')),
+                                            ElevatedButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(ctx, true),
+                                                child: Text('Devolver')),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirmar == true) {
+                                        // Ejecuta la devolución (ver función siguiente)
+                                        if (estudiante['equipoId'] != null &&
+                                            estudiante['id'] != null) {
+                                          await _devolverEquipo(
+                                              estudiante['equipoId'],
+                                              estudiante['id']);
+                                        } else {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text(
+                                                    'No se encontró el ID del equipo.')),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
                               onTap: () {
                                 Navigator.push(
                                   context,
