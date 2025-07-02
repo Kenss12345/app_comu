@@ -1,3 +1,4 @@
+import 'package:app_comu/screens/gestion_estudiantes_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'detalle_prestamo_screen.dart';
@@ -182,21 +183,52 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Container(color: const Color(0xFFF7F7FA)), // Fondo suave
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFF7F7FA), Color(0xFFFFF3E0)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         DefaultTabController(
           length: 2,
           child: Scaffold(
+            backgroundColor: Colors.transparent,
             appBar: AppBar(
               automaticallyImplyLeading: false,
-              title: const Text('Gestión de Equipos'),
+              title: Row(
+                children: [
+                  Icon(Icons.manage_accounts, color: Colors.white, size: 28),
+                  const SizedBox(width: 10),
+                  const Text('Gestión de Equipos'),
+                ],
+              ),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.logout),
                   tooltip: 'Cerrar sesión',
                   onPressed: () => _mostrarConfirmacionCerrarSesion(),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.group_add),
+                  tooltip: 'Gestionar estudiantes',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const GestionEstudiantesScreen()),
+                    );
+                  },
+                ),
               ],
+              backgroundColor: Colors.orange.shade700,
+              elevation: 3,
               bottom: const TabBar(
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
                 tabs: [
                   Tab(text: "Usuarios con Equipos"),
                   Tab(text: "Solicitudes"),
@@ -330,251 +362,279 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
   // Pestaña de Usuarios con Equipos
   Widget _buildUsuariosConEquiposTab() {
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxWidth: 900),
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        elevation: 6,
-        child: Padding(
-          padding: const EdgeInsets.all(28.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.people, color: Colors.deepOrange, size: 32),
-                  const SizedBox(width: 14),
-                  Text(
-                    "Usuarios con equipos en uso",
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      // Filtro por nombre
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Buscar por nombre...",
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onChanged: (valor) {
-                            filtroNombre = valor;
-                            aplicarFiltros();
-                          },
+    return Center(
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 900),
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          elevation: 8,
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.people, color: Colors.deepOrange, size: 32),
+                    const SizedBox(width: 14),
+                    Text(
+                      "Usuarios con equipos en uso",
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Card(
+                  color: Colors.orange.shade50,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            // Filtro por nombre
+                            Expanded(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: "Buscar por nombre...",
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                onChanged: (valor) {
+                                  filtroNombre = valor;
+                                  aplicarFiltros();
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Filtro por DNI
+                            SizedBox(
+                              width: 180,
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: "Buscar por DNI...",
+                                  prefixIcon: const Icon(Icons.credit_card),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (valor) {
+                                  filtroDni = valor;
+                                  aplicarFiltros();
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Filtro por DNI
-                      SizedBox(
-                        width: 180,
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Buscar por DNI...",
-                            prefixIcon: const Icon(Icons.credit_card),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (valor) {
-                            filtroDni = valor;
-                            aplicarFiltros();
-                          },
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            // Ordenar por tiempo restante
+                            const Text("Ordenar por: "),
+                            DropdownButton<bool>(
+                              value: ordenarTiempoRestanteAsc,
+                              items: const [
+                                DropdownMenuItem(
+                                    value: true, child: Text("Tiempo restante asc")),
+                                DropdownMenuItem(
+                                    value: false,
+                                    child: Text("Tiempo restante desc")),
+                              ],
+                              onChanged: (val) {
+                                if (val == null) return;
+                                setState(() {
+                                  ordenarTiempoRestanteAsc = val;
+                                  aplicarFiltros();
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 18),
+                            // Filtrar solo excedidos
+                            Checkbox(
+                              value: mostrarSoloExcedidos,
+                              onChanged: (val) {
+                                setState(() {
+                                  mostrarSoloExcedidos = val ?? false;
+                                  aplicarFiltros();
+                                });
+                              },
+                            ),
+                            const Text("Mostrar solo excedidos"),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      // Ordenar por tiempo restante
-                      const Text("Ordenar por: "),
-                      DropdownButton<bool>(
-                        value: ordenarTiempoRestanteAsc,
-                        items: const [
-                          DropdownMenuItem(
-                              value: true, child: Text("Tiempo restante asc")),
-                          DropdownMenuItem(
-                              value: false,
-                              child: Text("Tiempo restante desc")),
-                        ],
-                        onChanged: (val) {
-                          if (val == null) return;
-                          setState(() {
-                            ordenarTiempoRestanteAsc = val;
-                            aplicarFiltros();
-                          });
-                        },
-                      ),
-                      const SizedBox(width: 18),
-                      // Filtrar solo excedidos
-                      Checkbox(
-                        value: mostrarSoloExcedidos,
-                        onChanged: (val) {
-                          setState(() {
-                            mostrarSoloExcedidos = val ?? false;
-                            aplicarFiltros();
-                          });
-                        },
-                      ),
-                      const Text("Mostrar solo excedidos"),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Expanded(
-                child: estudiantesFiltrados.isEmpty
-                    ? const Center(
-                        child: Text("No hay usuarios con equipos en uso."))
-                    : ListView.separated(
-                        itemCount: estudiantesFiltrados.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final estudiante = estudiantesFiltrados[index];
-                          final tiempo =
-                              estudiante['tiempo_restante'] as Duration;
+                ),
+                const SizedBox(height: 18),
+                Expanded(
+                  child: estudiantesFiltrados.isEmpty
+                      ? const Center(
+                          child: Text("No hay usuarios con equipos en uso."))
+                      : ListView.separated(
+                          itemCount: estudiantesFiltrados.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final estudiante = estudiantesFiltrados[index];
+                            final tiempo =
+                                estudiante['tiempo_restante'] as Duration;
 
-                          return Card(
-                            color: tiempo.inSeconds.isNegative
-                                ? Colors.red.shade50
-                                : Colors.green.shade50,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18)),
-                            child: ListTile(
-                              leading: const Icon(Icons.person,
-                                  size: 38, color: Colors.blueGrey),
-                              title: Text(estudiante['nombre'],
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18)),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 2.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "DNI: ${estudiante['dni'] ?? '---'}",
-                                      style: TextStyle(
-                                          fontSize: 15,
-                                          color: Colors.grey[700]),
-                                    ),
-                                    Text(
-                                      estudiante['tiempo_restante']
-                                              .inSeconds
-                                              .isNegative
-                                          ? "Tiempo excedido: ${-_dias(estudiante['tiempo_restante'])} días"
-                                          : "Tiempo restante: ${_dias(estudiante['tiempo_restante'])} días",
-                                      style: TextStyle(
-                                        color: estudiante['tiempo_restante']
+                            return Card(
+                              color: tiempo.inSeconds.isNegative
+                                  ? Colors.red.shade50
+                                  : Colors.green.shade50,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18)),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Colors.orange.shade100,
+                                  child: const Icon(Icons.person, color: Colors.deepOrange),
+                                ),
+                                title: Text(estudiante['nombre'],
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18)),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 2.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "DNI: "+(estudiante['dni'] ?? '---'),
+                                        style: TextStyle(
+                                            fontSize: 15,
+                                            color: Colors.grey[700]),
+                                      ),
+                                      Text(
+                                        estudiante['tiempo_restante']
                                                 .inSeconds
                                                 .isNegative
-                                            ? Colors.red
-                                            : Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                            ? "Tiempo excedido: "+(-_dias(estudiante['tiempo_restante'])).toString()+" días"
+                                            : "Tiempo restante: "+(_dias(estudiante['tiempo_restante'])).toString()+" días",
+                                        style: TextStyle(
+                                          color: estudiante['tiempo_restante']
+                                                  .inSeconds
+                                                  .isNegative
+                                              ? Colors.red
+                                              : Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
+                                      Text(
+                                        "Debe devolver: "+(estudiante['fechaDevolucion'] ?? '---'),
+                                        style: const TextStyle(
+                                            fontSize: 15, color: Colors.blueGrey),
+                                      ),
+                                      Text(
+                                        "Fecha de préstamo: "+(estudiante['fechaPrestamo'] ?? '---'),
+                                        style: const TextStyle(
+                                            fontSize: 15, color: Colors.blueGrey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.chevron_right,
+                                          color: Colors.orange.shade600,
+                                          size: 32),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                DetallePrestamoScreen(
+                                                    estudiante: estudiante),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    Text(
-                                      "Debe devolver: ${estudiante['fechaDevolucion'] ?? '---'}",
-                                      style: const TextStyle(
-                                          fontSize: 15, color: Colors.blueGrey),
-                                    ),
-                                    Text(
-                                      "Fecha de préstamo: ${estudiante['fechaPrestamo'] ?? '---'}",
-                                      style: const TextStyle(
-                                          fontSize: 15, color: Colors.blueGrey),
+                                    IconButton(
+                                      icon: Icon(Icons.assignment_return,
+                                          color: Colors.green.shade700),
+                                      tooltip: 'Devolver equipo',
+                                      onPressed: () async {
+                                        final confirmar = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                            title: Row(
+                                              children: [
+                                                Icon(Icons.assignment_return, color: Colors.green.shade700),
+                                                const SizedBox(width: 8),
+                                                const Text('Devolver equipo'),
+                                              ],
+                                            ),
+                                            content: const Text(
+                                                '¿Estás seguro de devolver este equipo? Esta acción no se puede deshacer.'),
+                                            actions: [
+                                              TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(ctx, false),
+                                                  child: const Text('Cancelar')),
+                                              ElevatedButton(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.green.shade700,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                  ),
+                                                  onPressed: () =>
+                                                      Navigator.pop(ctx, true),
+                                                  child: const Text('Devolver')),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirmar == true) {
+                                          // Ejecuta la devolución (ver función siguiente)
+                                          if (estudiante['equipoId'] != null &&
+                                              estudiante['id'] != null) {
+                                            await _devolverEquipo(
+                                                estudiante['equipoId'],
+                                                estudiante['id']);
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'No se encontró el ID del equipo.')),
+                                            );
+                                          }
+                                        }
+                                      },
                                     ),
                                   ],
                                 ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => DetallePrestamoScreen(
+                                          estudiante: estudiante),
+                                    ),
+                                  );
+                                },
                               ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(Icons.chevron_right,
-                                        color: Colors.orange.shade600,
-                                        size: 32),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              DetallePrestamoScreen(
-                                                  estudiante: estudiante),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.assignment_return,
-                                        color: Colors.green.shade700),
-                                    tooltip: 'Devolver equipo',
-                                    onPressed: () async {
-                                      final confirmar = await showDialog<bool>(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          title: Text('Devolver equipo'),
-                                          content: Text(
-                                              '¿Estás seguro de devolver este equipo? Esta acción no se puede deshacer.'),
-                                          actions: [
-                                            TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(ctx, false),
-                                                child: Text('Cancelar')),
-                                            ElevatedButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(ctx, true),
-                                                child: Text('Devolver')),
-                                          ],
-                                        ),
-                                      );
-                                      if (confirmar == true) {
-                                        // Ejecuta la devolución (ver función siguiente)
-                                        if (estudiante['equipoId'] != null &&
-                                            estudiante['id'] != null) {
-                                          await _devolverEquipo(
-                                              estudiante['equipoId'],
-                                              estudiante['id']);
-                                        } else {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    'No se encontró el ID del equipo.')),
-                                          );
-                                        }
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => DetallePrestamoScreen(
-                                        estudiante: estudiante),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -583,205 +643,224 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
   // Pestaña de Solicitudes
   Widget _buildSolicitudesTab() {
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxWidth: 1100),
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        elevation: 6,
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.assignment,
-                      color: Colors.deepOrange, size: 32),
-                  const SizedBox(width: 14),
-                  Text(
-                    "Solicitudes pendientes",
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87),
-                  ),
-                  const Spacer(),
-                  const Text("Antiguos", style: TextStyle(fontSize: 15)),
-                  Switch(
-                    value: ordenarRecientesPrimero,
-                    onChanged: (val) =>
-                        setState(() => ordenarRecientesPrimero = val),
-                  ),
-                  const Text("Recientes", style: TextStyle(fontSize: 15)),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Buscar por nombre del solicitante...",
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onChanged: (valor) {
-                        setState(() {
-                          filtroNombreSolicitante = valor.trim().toLowerCase();
-                        });
-                      },
+    return Center(
+      child: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 1100),
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          elevation: 8,
+          child: Padding(
+            padding: const EdgeInsets.all(28.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.assignment,
+                        color: Colors.deepOrange, size: 32),
+                    const SizedBox(width: 14),
+                    Text(
+                      "Solicitudes pendientes",
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 180,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Buscar por DNI...",
-                        prefixIcon: const Icon(Icons.credit_card),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (valor) {
-                        setState(() {
-                          filtroDni = valor.trim();
-                        });
-                      },
+                    const Spacer(),
+                    const Text("Antiguos", style: TextStyle(fontSize: 15)),
+                    Switch(
+                      value: ordenarRecientesPrimero,
+                      onChanged: (val) =>
+                          setState(() => ordenarRecientesPrimero = val),
+                      activeColor: Colors.orange.shade700,
                     ),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('solicitudes')
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return const Center(
-                          child: Text("Error al cargar solicitudes."));
-                    }
-                    var solicitudes = snapshot.data?.docs ?? [];
-
-                    // FILTRO POR NOMBRE DE SOLICITANTE y por DNI
-                    if (filtroNombreSolicitante.isNotEmpty) {
-                      solicitudes = solicitudes.where((doc) {
-                        final nombre =
-                            (doc['nombre'] ?? '').toString().toLowerCase();
-                        return nombre.contains(filtroNombreSolicitante);
-                      }).toList();
-                    }
-                    if (filtroDni.isNotEmpty) {
-                      solicitudes = solicitudes.where((doc) {
-                        final dni = (doc['dni'] ?? '').toString();
-                        return dni.contains(filtroDni);
-                      }).toList();
-                    }
-                    // ORDENAR POR FECHA ENVIO
-                    solicitudes.sort((a, b) {
-                      final tsA = a['fecha_envio'];
-                      final tsB = b['fecha_envio'];
-                      DateTime dtA, dtB;
-                      if (tsA is Timestamp) {
-                        dtA = tsA.toDate();
-                      } else {
-                        dtA = DateTime.now();
-                      }
-                      if (tsB is Timestamp) {
-                        dtB = tsB.toDate();
-                      } else {
-                        dtB = DateTime.now();
-                      }
-                      return ordenarRecientesPrimero
-                          ? dtB.compareTo(dtA)
-                          : dtA.compareTo(dtB);
-                    });
-
-                    // Tabla estilo CRUD
-                    return solicitudes.isEmpty
-                        ? const Center(
-                            child: Text("No hay solicitudes pendientes."))
-                        : SingleChildScrollView(
-                            scrollDirection: Axis.vertical,
-                            child: DataTable(
-                              columnSpacing: 18,
-                              columns: const [
-                                DataColumn(
-                                    label: Text("Solicitante",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold))),
-                                DataColumn(
-                                    label: Text("Equipo",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold))),
-                                DataColumn(
-                                    label: Text("Fecha solicitud",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold))),
-                                DataColumn(
-                                    label: Text("Acciones",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold))),
-                              ],
-                              rows: solicitudes.map<DataRow>((solicitud) {
-                                final data =
-                                    solicitud.data() as Map<String, dynamic>;
-                                final nombre = data['nombre'] ?? '---';
-                                final equipo =
-                                    data['equipos']?[0]?['nombre'] ?? '---';
-                                final fechaEnvio =
-                                    data['fecha_envio'] is Timestamp
-                                        ? DateFormat('dd/MM/yyyy').format(
-                                            (data['fecha_envio'] as Timestamp)
-                                                .toDate())
-                                        : '---';
-                                return DataRow(
-                                  cells: [
-                                    DataCell(Text(nombre)),
-                                    DataCell(Text(equipo)),
-                                    DataCell(Text(fechaEnvio)),
-                                    DataCell(Row(
-                                      children: [
-                                        IconButton(
-                                          icon: Icon(Icons.visibility,
-                                              color: Colors.blue.shade600),
-                                          tooltip: "Visualizar",
-                                          onPressed: () =>
-                                              _mostrarDetallesSolicitud(
-                                                  context, solicitud),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(Icons.check_circle,
-                                              color: Colors.green.shade600),
-                                          tooltip: "Aceptar",
-                                          onPressed: () => _gestionarSolicitud(
-                                              solicitud, "Aceptada"),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(Icons.cancel,
-                                              color: Colors.red.shade600),
-                                          tooltip: "Rechazar",
-                                          onPressed: () => _gestionarSolicitud(
-                                              solicitud, "Rechazada"),
-                                        ),
-                                      ],
-                                    )),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
-                          );
-                  },
+                    const Text("Recientes", style: TextStyle(fontSize: 15)),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 18),
+                Card(
+                  color: Colors.orange.shade50,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: "Buscar por nombre del solicitante...",
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            onChanged: (valor) {
+                              setState(() {
+                                filtroNombreSolicitante = valor.trim().toLowerCase();
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 180,
+                          child: TextField(
+                            decoration: InputDecoration(
+                              hintText: "Buscar por DNI...",
+                              prefixIcon: const Icon(Icons.credit_card),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (valor) {
+                              setState(() {
+                                filtroDni = valor.trim();
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('solicitudes')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return const Center(
+                            child: Text("Error al cargar solicitudes."));
+                      }
+                      var solicitudes = snapshot.data?.docs ?? [];
+
+                      // FILTRO POR NOMBRE DE SOLICITANTE y por DNI
+                      if (filtroNombreSolicitante.isNotEmpty) {
+                        solicitudes = solicitudes.where((doc) {
+                          final nombre =
+                              (doc['nombre'] ?? '').toString().toLowerCase();
+                          return nombre.contains(filtroNombreSolicitante);
+                        }).toList();
+                      }
+                      if (filtroDni.isNotEmpty) {
+                        solicitudes = solicitudes.where((doc) {
+                          final dni = (doc['dni'] ?? '').toString();
+                          return dni.contains(filtroDni);
+                        }).toList();
+                      }
+                      // ORDENAR POR FECHA ENVIO
+                      solicitudes.sort((a, b) {
+                        final tsA = a['fecha_envio'];
+                        final tsB = b['fecha_envio'];
+                        DateTime dtA, dtB;
+                        if (tsA is Timestamp) {
+                          dtA = tsA.toDate();
+                        } else {
+                          dtA = DateTime.now();
+                        }
+                        if (tsB is Timestamp) {
+                          dtB = tsB.toDate();
+                        } else {
+                          dtB = DateTime.now();
+                        }
+                        return ordenarRecientesPrimero
+                            ? dtB.compareTo(dtA)
+                            : dtA.compareTo(dtB);
+                      });
+
+                      // Tabla estilo CRUD
+                      return solicitudes.isEmpty
+                          ? const Center(
+                              child: Text("No hay solicitudes pendientes."))
+                          : SingleChildScrollView(
+                              scrollDirection: Axis.vertical,
+                              child: DataTable(
+                                columnSpacing: 18,
+                                headingRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.orange.shade100),
+                                dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.white),
+                                border: TableBorder.all(color: Colors.orange.shade100, width: 1),
+                                columns: const [
+                                  DataColumn(
+                                      label: Text("Solicitante",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold))),
+                                  DataColumn(
+                                      label: Text("Equipo",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold))),
+                                  DataColumn(
+                                      label: Text("Fecha solicitud",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold))),
+                                  DataColumn(
+                                      label: Text("Acciones",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold))),
+                                ],
+                                rows: solicitudes.map<DataRow>((solicitud) {
+                                  final data =
+                                      solicitud.data() as Map<String, dynamic>;
+                                  final nombre = data['nombre'] ?? '---';
+                                  final equipo =
+                                      data['equipos']?[0]?['nombre'] ?? '---';
+                                  final fechaEnvio =
+                                      data['fecha_envio'] is Timestamp
+                                          ? DateFormat('dd/MM/yyyy').format(
+                                              (data['fecha_envio'] as Timestamp)
+                                                  .toDate())
+                                          : '---';
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(Text(nombre)),
+                                      DataCell(Text(equipo)),
+                                      DataCell(Text(fechaEnvio)),
+                                      DataCell(Row(
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.visibility,
+                                                color: Colors.blue.shade600),
+                                            tooltip: "Visualizar",
+                                            onPressed: () =>
+                                                _mostrarDetallesSolicitud(
+                                                    context, solicitud),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.check_circle,
+                                                color: Colors.green.shade600),
+                                            tooltip: "Aceptar",
+                                            onPressed: () => _gestionarSolicitud(
+                                                solicitud, "Aceptada"),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.cancel,
+                                                color: Colors.red.shade600),
+                                            tooltip: "Rechazar",
+                                            onPressed: () => _gestionarSolicitud(
+                                                solicitud, "Rechazada"),
+                                          ),
+                                        ],
+                                      )),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

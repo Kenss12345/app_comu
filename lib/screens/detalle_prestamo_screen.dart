@@ -26,18 +26,19 @@ class DetallePrestamoScreen extends StatelessWidget {
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: Colors.orange.shade700,
+        elevation: 2,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.orange),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Regresar',
         ),
         title: Text(
           "Detalle de Préstamo",
           style: TextStyle(
-            color: Colors.orange.shade800,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 22,
           ),
@@ -49,20 +50,27 @@ class DetallePrestamoScreen extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 850),
           margin: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
           child: Card(
-            elevation: 8,
+            elevation: 10,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(36),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.assignment_turned_in,
-                          color: Colors.orange.shade600, size: 34),
-                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(Icons.assignment_turned_in,
+                            color: Colors.orange.shade700, size: 34),
+                      ),
+                      const SizedBox(width: 14),
                       Text(
                         "Detalle de Préstamo",
                         style: TextStyle(
@@ -72,49 +80,73 @@ class DetallePrestamoScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  Card(
+                    color: Colors.orange.shade50,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+                      child: Wrap(
+                        spacing: 30,
+                        runSpacing: 14,
+                        children: [
+                          _detalleDato("Nombre", mostrar(estudiante['nombre'])),
+                          _detalleDato("DNI", mostrar(estudiante['dni'])),
+                          _detalleDato(
+                              "Tipo de Usuario", mostrar(estudiante['TipoUser'])),
+                          _detalleDato("Puntos", mostrar(estudiante['puntos'])),
+                          _detalleDato("Correo", mostrar(estudiante['email'])),
+                          _detalleDato("Celular", mostrar(estudiante['celular'])),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 30,
-                    runSpacing: 14,
-                    children: [
-                      _detalleDato("Nombre", mostrar(estudiante['nombre'])),
-                      _detalleDato("DNI", mostrar(estudiante['dni'])),
-                      _detalleDato(
-                          "Tipo de Usuario", mostrar(estudiante['TipoUser'])),
-                      _detalleDato("Puntos", mostrar(estudiante['puntos'])),
-                      _detalleDato("Correo", mostrar(estudiante['email'])),
-                      _detalleDato("Celular", mostrar(estudiante['celular'])),
-                    ],
+                  Card(
+                    color: Colors.blue.shade50,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+                      child: Wrap(
+                        spacing: 30,
+                        runSpacing: 14,
+                        children: [
+                          _detalleDato("Equipo", mostrar(estudiante['equipo'])),
+                          _detalleDato(
+                              "Código UC", mostrar(estudiante['codigoUC'])),
+                          _detalleDato(
+                              "Condición", mostrar(estudiante['condicion'])),
+                          _detalleDato(
+                              "Tipo Equipo", mostrar(estudiante['tipoEquipo'])),
+                          _detalleDato("Estado", mostrar(estudiante['estado'])),
+                          _detalleDato("Estado préstamo",
+                              mostrar(estudiante['estado_prestamo'])),
+                        ],
+                      ),
+                    ),
                   ),
-                  const Divider(height: 32, thickness: 1.1),
-                  Wrap(
-                    spacing: 30,
-                    runSpacing: 14,
-                    children: [
-                      _detalleDato("Equipo", mostrar(estudiante['equipo'])),
-                      _detalleDato(
-                          "Código UC", mostrar(estudiante['codigoUC'])),
-                      _detalleDato(
-                          "Condición", mostrar(estudiante['condicion'])),
-                      _detalleDato(
-                          "Tipo Equipo", mostrar(estudiante['tipoEquipo'])),
-                      _detalleDato("Estado", mostrar(estudiante['estado'])),
-                      _detalleDato("Estado préstamo",
-                          mostrar(estudiante['estado_prestamo'])),
-                    ],
-                  ),
-                  const Divider(height: 32, thickness: 1.1),
-                  Wrap(
-                    spacing: 30,
-                    runSpacing: 14,
-                    children: [
-                      _detalleDato("Fecha/hora solicitud",
-                          formateaFecha(estudiante['timestamp_solicitud'])),
-                      _detalleDato(
-                          "Fecha/hora devolución",
-                          formateaFecha(estudiante['fechaDevolucion'] ??
-                              estudiante['fecha_devolucion'])),
-                    ],
+                  const SizedBox(height: 18),
+                  Card(
+                    color: Colors.green.shade50,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+                      child: Wrap(
+                        spacing: 30,
+                        runSpacing: 14,
+                        children: [
+                          _detalleDato("Fecha/hora solicitud",
+                              formateaFecha(estudiante['timestamp_solicitud'])),
+                          _detalleDato(
+                              "Fecha/hora devolución",
+                              formateaFecha(estudiante['fechaDevolucion'] ??
+                                  estudiante['fecha_devolucion'])),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Card(
@@ -126,19 +158,38 @@ class DetallePrestamoScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        (tiempo == null)
-                            ? "No disponible"
-                            : tiempo.inSeconds.isNegative
-                                ? "Tiempo excedido: ${-tiempo.inHours}h ${-tiempo.inMinutes.remainder(60)}m"
-                                : "Tiempo restante: ${tiempo.inHours}h ${tiempo.inMinutes.remainder(60)}m",
-                        style: TextStyle(
-                          color: tiempo?.inSeconds.isNegative == true
-                              ? Colors.red
-                              : Colors.green,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            tiempo?.inSeconds.isNegative == true
+                                ? Icons.warning
+                                : Icons.timer,
+                            color: tiempo?.inSeconds.isNegative == true
+                                ? Colors.red
+                                : Colors.green,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              (tiempo == null)
+                                  ? "No disponible"
+                                  : tiempo.inSeconds.isNegative
+                                      ? "Tiempo excedido: "+
+                                          (-tiempo.inHours).toString()+"h "+
+                                          (-tiempo.inMinutes.remainder(60)).toString()+"m"
+                                      : "Tiempo restante: "+
+                                          (tiempo.inHours).toString()+"h "+
+                                          (tiempo.inMinutes.remainder(60)).toString()+"m",
+                              style: TextStyle(
+                                color: tiempo?.inSeconds.isNegative == true
+                                    ? Colors.red
+                                    : Colors.green,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -154,7 +205,7 @@ class DetallePrestamoScreen extends StatelessWidget {
                         icon: const Icon(Icons.map),
                         label: const Text("Buscar en el Mapa"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          backgroundColor: Colors.orange.shade700,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 32, vertical: 16),
                           textStyle: const TextStyle(

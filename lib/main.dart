@@ -1,5 +1,6 @@
 import 'package:app_comu/firebase_options.dart';
 import 'package:app_comu/screens/equipos_a_cargo_screen.dart';
+import 'package:app_comu/screens/gestion_estudiantes_screen.dart';
 import 'package:app_comu/screens/solicitud_equipos_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,6 +38,7 @@ class MyApp extends StatelessWidget {
         '/solicitud_equipos': (context) => SolicitudEquiposScreen(),
         '/equipos_a_cargo': (context) => EquiposACargoScreen(),
         '/usuarios_con_equipos': (context) => const UsuariosConEquiposScreen(),
+        '/gestion_estudiantes': (context) => const GestionEstudiantesScreen(),
       },
     );
   }
