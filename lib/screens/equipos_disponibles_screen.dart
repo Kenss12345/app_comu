@@ -63,15 +63,19 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
           .doc(user.uid)
           .get();
       final data = snapshot.data();
+      if (mounted) {
       setState(() {
         _usuarioActual = user;
         _puntosUsuario = data?['puntos'] ?? 0;
         _cargandoUsuario = false;
       });
+      }
     } else {
+      if (mounted) {
       setState(() {
         _cargandoUsuario = false;
       });
+      }
     }
   }
 
@@ -79,6 +83,8 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     final snapshot =
         await FirebaseFirestore.instance.collection('equipos').get();
 
+    // Verificar si el widget aún está montado antes de llamar setState
+    if (mounted) {
     setState(() {
       equipos = snapshot.docs
           .map((doc) {
@@ -115,6 +121,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
           .cast<Map<String, dynamic>>()
           .toList();
     });
+    }
   }
 
   void _anadirAEquiposACargo(Map<String, dynamic> equipo) async {
@@ -178,7 +185,9 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
         SnackBar(content: Text("Error: ${e.toString()}")),
       );
     }
+    if (mounted) {
     _loadEquiposDesdeFirestore();
+    }
   }
 
   void _mostrarDetalles(BuildContext context, Map<String, dynamic> equipo) {

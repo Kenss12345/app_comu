@@ -23,6 +23,8 @@ dependencies:
   google_sign_in: ^6.2.2
   intl: ^0.20.2
   mailer: ^6.4.1
+  image_picker: ^1.0.7
+  firebase_storage: 12.4.4
 
 dev_dependencies:
   flutter_test:

@@ -66,6 +66,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // FUNCIÓN COMENTADA: Formulario de datos adicionales para registro
+  // Se mantiene comentada por si se requieren cambios futuros en los requerimientos
+  /*
   Future<void> _mostrarFormularioDatosAdicionales(User user) async {
     final TextEditingController dniController = TextEditingController();
     final TextEditingController celularController = TextEditingController();
@@ -170,7 +173,11 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
   }
+  */
 
+  // FUNCIÓN COMENTADA: Inicio de sesión con Google
+  // Se mantiene comentada por si se requieren cambios futuros en los requerimientos
+  /*
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
 
@@ -252,6 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+  */
 
   @override
   Widget build(BuildContext context) {
@@ -311,6 +319,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     : const Text("Iniciar Sesión"),
               ),
 
+              // BOTONES COMENTADOS: Registro manual y Google
+              // Se mantienen comentados por si se requieren cambios futuros en los requerimientos
+              /*
               const SizedBox(height: 10),
               OutlinedButton(
                 onPressed: () {
@@ -336,6 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 onPressed: _isLoading ? null : _signInWithGoogle,
               ),
+              */
 
               const SizedBox(height: 20),
               GestureDetector(

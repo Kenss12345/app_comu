@@ -8,6 +8,7 @@ import '../main.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
 import 'package:intl/intl.dart';
+import 'gestion_equipos_screen.dart';
 
 class UsuariosConEquiposScreen extends StatefulWidget {
   const UsuariosConEquiposScreen({super.key});
@@ -28,6 +29,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   bool _procesandoSolicitud = false;
   String filtroNombreSolicitante = "";
   bool ordenarRecientesPrimero = true;
+  int _selectedSection = 0; // 0: Usuarios, 1: Solicitudes, 2: Gestionar Estudiantes, 3: Gestionar Equipos
 
   @override
   void initState() {
@@ -181,91 +183,655 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFFF7F7FA), Color(0xFFFFF3E0)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+        
+        return Stack(
+          children: [
+            // Fondo con gradiente mejorado
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFF8FAFC),
+                    const Color(0xFFF1F5F9),
+                    const Color(0xFFFEF3C7),
+                    const Color(0xFFFFF7ED),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  stops: const [0.0, 0.3, 0.7, 1.0],
+                ),
+              ),
             ),
-          ),
-        ),
-        DefaultTabController(
-          length: 2,
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              title: Row(
+            // Layout principal con barra lateral
+            Scaffold(
+              backgroundColor: Colors.transparent,
+              appBar: isMobile ? AppBar(
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF1E40AF),
+                            const Color(0xFF3B82F6),
+                            const Color(0xFF60A5FA),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text("Panel de Control"),
+                  ],
+                ),
+                backgroundColor: Colors.white,
+                elevation: 1,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    onPressed: () => _mostrarConfirmacionCerrarSesion(),
+                  ),
+                ],
+              ) : null,
+              drawer: isMobile ? Drawer(
+                child: _buildSidebarContent(),
+              ) : null,
+              body: Row(
                 children: [
-                  Icon(Icons.manage_accounts, color: Colors.white, size: 28),
-                  const SizedBox(width: 10),
-                  const Text('Gestión de Equipos'),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  tooltip: 'Cerrar sesión',
-                  onPressed: () => _mostrarConfirmacionCerrarSesion(),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.group_add),
-                  tooltip: 'Gestionar estudiantes',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const GestionEstudiantesScreen()),
-                    );
-                  },
-                ),
-              ],
-              backgroundColor: Colors.orange.shade700,
-              elevation: 3,
-              bottom: const TabBar(
-                indicatorColor: Colors.white,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white70,
-                tabs: [
-                  Tab(text: "Usuarios con Equipos"),
-                  Tab(text: "Solicitudes"),
+                  // Barra lateral mejorada - responsive
+                  if (!isMobile) ...[
+                    Container(
+                      width: isTablet ? 250 : 300,
+                      child: _buildSidebarContent(),
+                    ),
+                  ],
+                  // Contenido principal mejorado - responsive
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.all(isMobile ? 12 : 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(isMobile ? 16 : 24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 30,
+                            offset: const Offset(0, 8),
+                            spreadRadius: 0,
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 60,
+                            offset: const Offset(0, 16),
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Header del contenido mejorado - responsive
+                          Container(
+                            padding: EdgeInsets.all(isMobile ? 16 : 32),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(isMobile ? 16 : 24),
+                                topRight: Radius.circular(isMobile ? 16 : 24),
+                              ),
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: const Color(0xFFE2E8F0),
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: isMobile 
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: _selectedSection == 0
+                                                  ? [const Color(0xFF10B981), const Color(0xFF34D399)]
+                                                  : _selectedSection == 1
+                                                      ? [const Color(0xFFF59E0B), const Color(0xFFFBBF24)]
+                                                      : _selectedSection == 2
+                                                          ? [const Color(0xFF8B5CF6), const Color(0xFFA78BFA)]
+                                                          : [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            _selectedSection == 0
+                                                ? Icons.people_alt
+                                                : _selectedSection == 1
+                                                    ? Icons.assignment_turned_in
+                                                    : _selectedSection == 2
+                                                        ? Icons.school
+                                                        : Icons.devices,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            _selectedSection == 0
+                                                ? 'Usuarios con Equipos'
+                                                : _selectedSection == 1
+                                                    ? 'Solicitudes'
+                                                    : _selectedSection == 2
+                                                        ? 'Gestionar Estudiantes'
+                                                        : 'Gestionar Equipos',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _selectedSection == 0
+                                          ? 'Gestiona los préstamos activos de equipos'
+                                          : _selectedSection == 1
+                                              ? 'Revisa y aprueba solicitudes de préstamo'
+                                              : _selectedSection == 2
+                                                  ? 'Administra la información de estudiantes'
+                                                  : 'Administra la información de equipos',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: const Color(0xFF64748B),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    if (_selectedSection == 0 || _selectedSection == 1) ...[
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF0F9FF),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(
+                                            color: const Color(0xFF0EA5E9),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 6,
+                                              height: 6,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF0EA5E9),
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Tiempo Real',
+                                              style: TextStyle(
+                                                color: const Color(0xFF0EA5E9),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                )
+                              : Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: _selectedSection == 0
+                                              ? [const Color(0xFF10B981), const Color(0xFF34D399)]
+                                              : _selectedSection == 1
+                                                  ? [const Color(0xFFF59E0B), const Color(0xFFFBBF24)]
+                                                  : _selectedSection == 2
+                                                      ? [const Color(0xFF8B5CF6), const Color(0xFFA78BFA)]
+                                                      : [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        _selectedSection == 0
+                                            ? Icons.people_alt
+                                            : _selectedSection == 1
+                                                ? Icons.assignment_turned_in
+                                                : _selectedSection == 2
+                                                    ? Icons.school
+                                                    : Icons.devices,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _selectedSection == 0
+                                                ? 'Usuarios con Equipos'
+                                                : _selectedSection == 1
+                                                    ? 'Solicitudes'
+                                                    : _selectedSection == 2
+                                                        ? 'Gestionar Estudiantes'
+                                                        : 'Gestionar Equipos',
+                                            style: TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF1E293B),
+                                              letterSpacing: -0.5,
+                                            ),
+                                          ),
+                                          Text(
+                                            _selectedSection == 0
+                                                ? 'Gestiona los préstamos activos de equipos'
+                                                : _selectedSection == 1
+                                                    ? 'Revisa y aprueba solicitudes de préstamo'
+                                                    : _selectedSection == 2
+                                                        ? 'Administra la información de estudiantes'
+                                                        : 'Administra la información de equipos',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: const Color(0xFF64748B),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (_selectedSection == 0 || _selectedSection == 1)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF0F9FF),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: const Color(0xFF0EA5E9),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF0EA5E9),
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Tiempo Real',
+                                              style: TextStyle(
+                                                color: const Color(0xFF0EA5E9),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                          ),
+                          // Contenido dinámico
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAFAFA),
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(isMobile ? 16 : 24),
+                                  bottomRight: Radius.circular(isMobile ? 16 : 24),
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: Radius.circular(isMobile ? 16 : 24),
+                                  bottomRight: Radius.circular(isMobile ? 16 : 24),
+                                ),
+                                child: _selectedSection == 0
+                                    ? _buildUsuariosConEquiposTab()
+                                    : _selectedSection == 1
+                                        ? _buildSolicitudesTab()
+                                        : _selectedSection == 2
+                                            ? const GestionEstudiantesScreen()
+                                            : GestionEquiposScreen(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-            body: TabBarView(
+            // Overlay de procesamiento mejorado
+            if (_procesandoSolicitud)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.6),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF3B82F6),
+                                  const Color(0xFF60A5FA),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            "Procesando solicitud...",
+                            style: TextStyle(
+                              color: const Color(0xFF1E293B),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Por favor espera un momento",
+                            style: TextStyle(
+                              color: const Color(0xFF64748B),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSidebarContent() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(4, 0),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 40,
+            offset: const Offset(8, 0),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header de la barra lateral mejorado
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF1E40AF),
+                  const Color(0xFF3B82F6),
+                  const Color(0xFF60A5FA),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3B82F6).withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
               children: [
-                _buildUsuariosConEquiposTab(),
-                _buildSolicitudesTab(),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.admin_panel_settings,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Panel de Control',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Gestión de Equipos',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-        ),
-        if (_procesandoSolicitud)
-          Positioned.fill(
-            child: AbsorbPointer(
-              absorbing: true,
-              child: Container(
-                color: Colors.black.withOpacity(0.45),
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(color: Colors.orange),
-                      SizedBox(height: 24),
-                      Text(
-                        "Procesando solicitud...",
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      )
-                    ],
+          // Menú de navegación mejorado
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+            child: Column(
+              children: [
+                _SidebarButton(
+                  icon: Icons.people_alt,
+                  label: 'Usuarios con Equipos',
+                  selected: _selectedSection == 0,
+                  onTap: () => setState(() => _selectedSection = 0),
+                ),
+                const SizedBox(height: 12),
+                _SidebarButton(
+                  icon: Icons.assignment_turned_in,
+                  label: 'Solicitudes',
+                  selected: _selectedSection == 1,
+                  onTap: () => setState(() => _selectedSection = 1),
+                ),
+                const SizedBox(height: 12),
+                _SidebarButton(
+                  icon: Icons.school,
+                  label: 'Gestionar Estudiantes',
+                  selected: _selectedSection == 2,
+                  onTap: () => setState(() => _selectedSection = 2),
+                ),
+                const SizedBox(height: 12),
+                _SidebarButton(
+                  icon: Icons.devices,
+                  label: 'Gestionar Equipos',
+                  selected: _selectedSection == 3,
+                  onTap: () => setState(() => _selectedSection = 3),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          // Botón Cerrar Sesión mejorado
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFEF4444),
+                    const Color(0xFFDC2626),
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () => _mostrarConfirmacionCerrarSesion(),
+                icon: Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+                label: Text(
+                  'Cerrar Sesión',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
             ),
           ),
-      ],
+          // Footer de la barra lateral mejorado
+          Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF3B82F6),
+                        const Color(0xFF60A5FA),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Administrador',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        'Soporte Audiovisual',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -362,508 +928,1055 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
   // Pestaña de Usuarios con Equipos
   Widget _buildUsuariosConEquiposTab() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 900),
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        child: Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          elevation: 8,
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.people, color: Colors.deepOrange, size: 32),
-                    const SizedBox(width: 14),
-                    Text(
-                      "Usuarios con equipos en uso",
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Card(
-                  color: Colors.orange.shade50,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            // Filtro por nombre
-                            Expanded(
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  hintText: "Buscar por nombre...",
-                                  prefixIcon: const Icon(Icons.search),
-                                  border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                                onChanged: (valor) {
-                                  filtroNombre = valor;
-                                  aplicarFiltros();
-                                },
-                              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        
+        return Container(
+          padding: EdgeInsets.all(isMobile ? 16 : 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header de la sección - responsive
+              isMobile 
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade100,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(width: 12),
-                            // Filtro por DNI
-                            SizedBox(
-                              width: 180,
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  hintText: "Buscar por DNI...",
-                                  prefixIcon: const Icon(Icons.credit_card),
-                                  border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                ),
-                                keyboardType: TextInputType.number,
-                                onChanged: (valor) {
-                                  filtroDni = valor;
-                                  aplicarFiltros();
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            // Ordenar por tiempo restante
-                            const Text("Ordenar por: "),
-                            DropdownButton<bool>(
-                              value: ordenarTiempoRestanteAsc,
-                              items: const [
-                                DropdownMenuItem(
-                                    value: true, child: Text("Tiempo restante asc")),
-                                DropdownMenuItem(
-                                    value: false,
-                                    child: Text("Tiempo restante desc")),
-                              ],
-                              onChanged: (val) {
-                                if (val == null) return;
-                                setState(() {
-                                  ordenarTiempoRestanteAsc = val;
-                                  aplicarFiltros();
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 18),
-                            // Filtrar solo excedidos
-                            Checkbox(
-                              value: mostrarSoloExcedidos,
-                              onChanged: (val) {
-                                setState(() {
-                                  mostrarSoloExcedidos = val ?? false;
-                                  aplicarFiltros();
-                                });
-                              },
-                            ),
-                            const Text("Mostrar solo excedidos"),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Expanded(
-                  child: estudiantesFiltrados.isEmpty
-                      ? const Center(
-                          child: Text("No hay usuarios con equipos en uso."))
-                      : ListView.separated(
-                          itemCount: estudiantesFiltrados.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final estudiante = estudiantesFiltrados[index];
-                            final tiempo =
-                                estudiante['tiempo_restante'] as Duration;
-
-                            return Card(
-                              color: tiempo.inSeconds.isNegative
-                                  ? Colors.red.shade50
-                                  : Colors.green.shade50,
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18)),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Colors.orange.shade100,
-                                  child: const Icon(Icons.person, color: Colors.deepOrange),
-                                ),
-                                title: Text(estudiante['nombre'],
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18)),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 2.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "DNI: "+(estudiante['dni'] ?? '---'),
-                                        style: TextStyle(
-                                            fontSize: 15,
-                                            color: Colors.grey[700]),
-                                      ),
-                                      Text(
-                                        estudiante['tiempo_restante']
-                                                .inSeconds
-                                                .isNegative
-                                            ? "Tiempo excedido: "+(-_dias(estudiante['tiempo_restante'])).toString()+" días"
-                                            : "Tiempo restante: "+(_dias(estudiante['tiempo_restante'])).toString()+" días",
-                                        style: TextStyle(
-                                          color: estudiante['tiempo_restante']
-                                                  .inSeconds
-                                                  .isNegative
-                                              ? Colors.red
-                                              : Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        "Debe devolver: "+(estudiante['fechaDevolucion'] ?? '---'),
-                                        style: const TextStyle(
-                                            fontSize: 15, color: Colors.blueGrey),
-                                      ),
-                                      Text(
-                                        "Fecha de préstamo: "+(estudiante['fechaPrestamo'] ?? '---'),
-                                        style: const TextStyle(
-                                            fontSize: 15, color: Colors.blueGrey),
-                                      ),
-                                    ],
+                            child: Icon(Icons.people, color: Colors.orange.shade700, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Usuarios con Equipos",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade800,
                                   ),
                                 ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(Icons.chevron_right,
-                                          color: Colors.orange.shade600,
-                                          size: 32),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                DetallePrestamoScreen(
-                                                    estudiante: estudiante),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.assignment_return,
-                                          color: Colors.green.shade700),
-                                      tooltip: 'Devolver equipo',
-                                      onPressed: () async {
-                                        final confirmar = await showDialog<bool>(
-                                          context: context,
-                                          builder: (ctx) => AlertDialog(
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                                            title: Row(
-                                              children: [
-                                                Icon(Icons.assignment_return, color: Colors.green.shade700),
-                                                const SizedBox(width: 8),
-                                                const Text('Devolver equipo'),
-                                              ],
-                                            ),
-                                            content: const Text(
-                                                '¿Estás seguro de devolver este equipo? Esta acción no se puede deshacer.'),
-                                            actions: [
-                                              TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(ctx, false),
-                                                  child: const Text('Cancelar')),
-                                              ElevatedButton(
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.green.shade700,
-                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                                  ),
-                                                  onPressed: () =>
-                                                      Navigator.pop(ctx, true),
-                                                  child: const Text('Devolver')),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirmar == true) {
-                                          // Ejecuta la devolución (ver función siguiente)
-                                          if (estudiante['equipoId'] != null &&
-                                              estudiante['id'] != null) {
-                                            await _devolverEquipo(
-                                                estudiante['equipoId'],
-                                                estudiante['id']);
-                                          } else {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              const SnackBar(
-                                                  content: Text(
-                                                      'No se encontró el ID del equipo.')),
-                                            );
-                                          }
-                                        }
-                                      },
-                                    ),
-                                  ],
+                                Text(
+                                  "Gestiona los préstamos activos",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
                                 ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => DetallePrestamoScreen(
-                                          estudiante: estudiante),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green.shade700, size: 14),
+                            const SizedBox(width: 6),
+                            Text(
+                              "${estudiantesFiltrados.length} usuarios activos",
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.people, color: Colors.orange.shade700, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Usuarios con Equipos",
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                          Text(
+                            "Gestiona los préstamos activos",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${estudiantesFiltrados.length} usuarios activos",
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          SizedBox(height: isMobile ? 16 : 24),
+          
+          // Panel de filtros - responsive
+          Container(
+            padding: EdgeInsets.all(isMobile ? 16 : 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Pestaña de Solicitudes
-  Widget _buildSolicitudesTab() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 1100),
-        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        child: Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          elevation: 8,
-          child: Padding(
-            padding: const EdgeInsets.all(28.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.assignment,
-                        color: Colors.deepOrange, size: 32),
-                    const SizedBox(width: 14),
-                    Text(
-                      "Solicitudes pendientes",
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87),
-                    ),
-                    const Spacer(),
-                    const Text("Antiguos", style: TextStyle(fontSize: 15)),
-                    Switch(
-                      value: ordenarRecientesPrimero,
-                      onChanged: (val) =>
-                          setState(() => ordenarRecientesPrimero = val),
-                      activeColor: Colors.orange.shade700,
-                    ),
-                    const Text("Recientes", style: TextStyle(fontSize: 15)),
-                  ],
+                Text(
+                  "Filtros y Búsqueda",
+                  style: TextStyle(
+                    fontSize: isMobile ? 16 : 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade800,
+                  ),
                 ),
-                const SizedBox(height: 18),
-                Card(
-                  color: Colors.orange.shade50,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-                    child: Row(
+                SizedBox(height: isMobile ? 12 : 16),
+                isMobile 
+                  ? Column(
                       children: [
+                        // Filtro por nombre
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: "Buscar por nombre...",
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          onChanged: (valor) {
+                            filtroNombre = valor;
+                            aplicarFiltros();
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        // Filtro por DNI
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: "Buscar por DNI...",
+                            prefixIcon: const Icon(Icons.credit_card),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (valor) {
+                            filtroDni = valor;
+                            aplicarFiltros();
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        // Controles móviles
+                        Row(
+                          children: [
+                            Text(
+                              "Ordenar: ",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: DropdownButton<bool>(
+                                value: ordenarTiempoRestanteAsc,
+                                underline: Container(),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: true,
+                                    child: Text("↑", style: TextStyle(fontSize: 12)),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: false,
+                                    child: Text("↓", style: TextStyle(fontSize: 12)),
+                                  ),
+                                ],
+                                onChanged: (val) {
+                                  if (val == null) return;
+                                  setState(() {
+                                    ordenarTiempoRestanteAsc = val;
+                                    aplicarFiltros();
+                                  });
+                                },
+                              ),
+                            ),
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: mostrarSoloExcedidos,
+                                  activeColor: Colors.orange.shade600,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      mostrarSoloExcedidos = val ?? false;
+                                      aplicarFiltros();
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  "Solo excedidos",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        // Filtro por nombre
                         Expanded(
                           child: TextField(
                             decoration: InputDecoration(
-                              hintText: "Buscar por nombre del solicitante...",
+                              hintText: "Buscar por nombre...",
                               prefixIcon: const Icon(Icons.search),
                               border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
+                              ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: Colors.grey.shade50,
                             ),
                             onChanged: (valor) {
-                              setState(() {
-                                filtroNombreSolicitante = valor.trim().toLowerCase();
-                              });
+                              filtroNombre = valor;
+                              aplicarFiltros();
                             },
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
+                        // Filtro por DNI
                         SizedBox(
-                          width: 180,
+                          width: 200,
                           child: TextField(
                             decoration: InputDecoration(
                               hintText: "Buscar por DNI...",
                               prefixIcon: const Icon(Icons.credit_card),
                               border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
+                              ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: Colors.grey.shade50,
                             ),
                             keyboardType: TextInputType.number,
                             onChanged: (valor) {
-                              setState(() {
-                                filtroDni = valor.trim();
-                              });
+                              filtroDni = valor;
+                              aplicarFiltros();
                             },
                           ),
                         ),
                       ],
                     ),
+                if (!isMobile) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      // Ordenar por tiempo restante
+                      Text(
+                        "Ordenar por: ",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButton<bool>(
+                          value: ordenarTiempoRestanteAsc,
+                          underline: Container(),
+                          items: const [
+                            DropdownMenuItem(
+                              value: true,
+                              child: Text("Tiempo restante ↑"),
+                            ),
+                            DropdownMenuItem(
+                              value: false,
+                              child: Text("Tiempo restante ↓"),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val == null) return;
+                            setState(() {
+                              ordenarTiempoRestanteAsc = val;
+                              aplicarFiltros();
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      // Filtrar solo excedidos
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: mostrarSoloExcedidos,
+                            activeColor: Colors.orange.shade600,
+                            onChanged: (val) {
+                              setState(() {
+                                mostrarSoloExcedidos = val ?? false;
+                                aplicarFiltros();
+                              });
+                            },
+                          ),
+                          Text(
+                            "Mostrar solo excedidos",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('solicitudes')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError) {
-                        return const Center(
-                            child: Text("Error al cargar solicitudes."));
-                      }
-                      var solicitudes = snapshot.data?.docs ?? [];
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Lista de usuarios
+          Expanded(
+            child: estudiantesFiltrados.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.people_outline,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No hay usuarios con equipos en uso",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: estudiantesFiltrados.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final estudiante = estudiantesFiltrados[index];
+                      final tiempo = estudiante['tiempo_restante'] as Duration;
+                      final esExcedido = tiempo.inSeconds.isNegative;
 
-                      // FILTRO POR NOMBRE DE SOLICITANTE y por DNI
-                      if (filtroNombreSolicitante.isNotEmpty) {
-                        solicitudes = solicitudes.where((doc) {
-                          final nombre =
-                              (doc['nombre'] ?? '').toString().toLowerCase();
-                          return nombre.contains(filtroNombreSolicitante);
-                        }).toList();
-                      }
-                      if (filtroDni.isNotEmpty) {
-                        solicitudes = solicitudes.where((doc) {
-                          final dni = (doc['dni'] ?? '').toString();
-                          return dni.contains(filtroDni);
-                        }).toList();
-                      }
-                      // ORDENAR POR FECHA ENVIO
-                      solicitudes.sort((a, b) {
-                        final tsA = a['fecha_envio'];
-                        final tsB = b['fecha_envio'];
-                        DateTime dtA, dtB;
-                        if (tsA is Timestamp) {
-                          dtA = tsA.toDate();
-                        } else {
-                          dtA = DateTime.now();
-                        }
-                        if (tsB is Timestamp) {
-                          dtB = tsB.toDate();
-                        } else {
-                          dtB = DateTime.now();
-                        }
-                        return ordenarRecientesPrimero
-                            ? dtB.compareTo(dtA)
-                            : dtA.compareTo(dtB);
-                      });
-
-                      // Tabla estilo CRUD
-                      return solicitudes.isEmpty
-                          ? const Center(
-                              child: Text("No hay solicitudes pendientes."))
-                          : SingleChildScrollView(
-                              scrollDirection: Axis.vertical,
-                              child: DataTable(
-                                columnSpacing: 18,
-                                headingRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.orange.shade100),
-                                dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.white),
-                                border: TableBorder.all(color: Colors.orange.shade100, width: 1),
-                                columns: const [
-                                  DataColumn(
-                                      label: Text("Solicitante",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text("Equipo",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text("Fecha solicitud",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                  DataColumn(
-                                      label: Text("Acciones",
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold))),
-                                ],
-                                rows: solicitudes.map<DataRow>((solicitud) {
-                                  final data =
-                                      solicitud.data() as Map<String, dynamic>;
-                                  final nombre = data['nombre'] ?? '---';
-                                  final equipo =
-                                      data['equipos']?[0]?['nombre'] ?? '---';
-                                  final fechaEnvio =
-                                      data['fecha_envio'] is Timestamp
-                                          ? DateFormat('dd/MM/yyyy').format(
-                                              (data['fecha_envio'] as Timestamp)
-                                                  .toDate())
-                                          : '---';
-                                  return DataRow(
-                                    cells: [
-                                      DataCell(Text(nombre)),
-                                      DataCell(Text(equipo)),
-                                      DataCell(Text(fechaEnvio)),
-                                      DataCell(Row(
-                                        children: [
-                                          IconButton(
-                                            icon: Icon(Icons.visibility,
-                                                color: Colors.blue.shade600),
-                                            tooltip: "Visualizar",
-                                            onPressed: () =>
-                                                _mostrarDetallesSolicitud(
-                                                    context, solicitud),
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: esExcedido ? Colors.red.shade200 : Colors.green.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(20),
+                          leading: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: esExcedido ? Colors.red.shade100 : Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.person,
+                              color: esExcedido ? Colors.red.shade700 : Colors.green.shade700,
+                              size: 24,
+                            ),
+                          ),
+                          title: Text(
+                            estudiante['nombre'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.credit_card, size: 16, color: Colors.grey.shade600),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "DNI: ${estudiante['dni'] ?? '---'}",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      esExcedido ? Icons.warning : Icons.access_time,
+                                      size: 16,
+                                      color: esExcedido ? Colors.red : Colors.green,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      esExcedido
+                                          ? "Tiempo excedido: ${(-_dias(estudiante['tiempo_restante'])).toString()} días"
+                                          : "Tiempo restante: ${(_dias(estudiante['tiempo_restante'])).toString()} días",
+                                      style: TextStyle(
+                                        color: esExcedido ? Colors.red : Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.event, size: 16, color: Colors.grey.shade600),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "Devolución: ${estudiante['fechaDevolucion'] ?? '---'}",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Botón Ver Detalles
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(Icons.visibility, color: Colors.blue.shade700),
+                                  tooltip: 'Ver detalles',
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => DetallePrestamoScreen(
+                                          estudiante: estudiante,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Botón Devolver Equipo
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(Icons.assignment_return, color: Colors.green.shade700),
+                                  tooltip: 'Devolver equipo',
+                                  onPressed: () async {
+                                    final confirmar = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                        title: Row(
+                                          children: [
+                                            Icon(Icons.assignment_return, color: Colors.green.shade700),
+                                            const SizedBox(width: 8),
+                                            const Text('Devolver equipo'),
+                                          ],
+                                        ),
+                                        content: const Text(
+                                          '¿Estás seguro de devolver este equipo? Esta acción no se puede deshacer.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: const Text('Cancelar'),
                                           ),
-                                          IconButton(
-                                            icon: Icon(Icons.check_circle,
-                                                color: Colors.green.shade600),
-                                            tooltip: "Aceptar",
-                                            onPressed: () => _gestionarSolicitud(
-                                                solicitud, "Aceptada"),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(Icons.cancel,
-                                                color: Colors.red.shade600),
-                                            tooltip: "Rechazar",
-                                            onPressed: () => _gestionarSolicitud(
-                                                solicitud, "Rechazada"),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.green.shade700,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                            ),
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            child: const Text('Devolver'),
                                           ),
                                         ],
-                                      )),
-                                    ],
-                                  );
-                                }).toList(),
+                                      ),
+                                    );
+                                    if (confirmar == true) {
+                                      if (estudiante['equipoId'] != null && estudiante['id'] != null) {
+                                        await _devolverEquipo(estudiante['equipoId'], estudiante['id']);
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('No se encontró el ID del equipo.'),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetallePrestamoScreen(estudiante: estudiante),
                               ),
                             );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+        );
+      },
+    );
+  }
+
+  // Pestaña de Solicitudes
+  Widget _buildSolicitudesTab() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        
+        return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header de la sección
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.assignment, color: Colors.orange.shade700, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Solicitudes Pendientes",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  Text(
+                    "Gestiona las solicitudes de préstamo",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // Switch de ordenamiento
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Antiguos",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ordenarRecientesPrimero ? Colors.grey.shade600 : Colors.orange.shade700,
+                        fontWeight: ordenarRecientesPrimero ? FontWeight.normal : FontWeight.w600,
+                      ),
+                    ),
+                    Switch(
+                      value: ordenarRecientesPrimero,
+                      onChanged: (val) => setState(() => ordenarRecientesPrimero = val),
+                      activeColor: Colors.orange.shade600,
+                    ),
+                    Text(
+                      "Recientes",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ordenarRecientesPrimero ? Colors.orange.shade700 : Colors.grey.shade600,
+                        fontWeight: ordenarRecientesPrimero ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Panel de filtros
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Filtro por nombre
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: "Buscar por nombre del solicitante...",
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    onChanged: (valor) {
+                      setState(() {
+                        filtroNombreSolicitante = valor.trim().toLowerCase();
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 200,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: "Buscar por DNI...",
+                      prefixIcon: const Icon(Icons.credit_card),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (valor) {
+                      setState(() {
+                        filtroDni = valor.trim();
+                      });
                     },
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          const SizedBox(height: 24),
+          
+          // Tabla de solicitudes
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('solicitudes').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: Colors.orange.shade600),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Cargando solicitudes...",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Error al cargar solicitudes",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                var solicitudes = snapshot.data?.docs ?? [];
+
+                // FILTRO POR NOMBRE DE SOLICITANTE y por DNI
+                if (filtroNombreSolicitante.isNotEmpty) {
+                  solicitudes = solicitudes.where((doc) {
+                    final nombre = (doc['nombre'] ?? '').toString().toLowerCase();
+                    return nombre.contains(filtroNombreSolicitante);
+                  }).toList();
+                }
+                if (filtroDni.isNotEmpty) {
+                  solicitudes = solicitudes.where((doc) {
+                    final dni = (doc['dni'] ?? '').toString();
+                    return dni.contains(filtroDni);
+                  }).toList();
+                }
+                // ORDENAR POR FECHA ENVIO
+                solicitudes.sort((a, b) {
+                  final tsA = a['fecha_envio'];
+                  final tsB = b['fecha_envio'];
+                  DateTime dtA, dtB;
+                  if (tsA is Timestamp) {
+                    dtA = tsA.toDate();
+                  } else {
+                    dtA = DateTime.now();
+                  }
+                  if (tsB is Timestamp) {
+                    dtB = tsB.toDate();
+                  } else {
+                    dtB = DateTime.now();
+                  }
+                  return ordenarRecientesPrimero ? dtB.compareTo(dtA) : dtA.compareTo(dtB);
+                });
+
+                return solicitudes.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.assignment_outlined,
+                              size: 64,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              "No hay solicitudes pendientes",
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.vertical,
+                          child: DataTable(
+                            columnSpacing: 24,
+                            headingRowColor: MaterialStateProperty.resolveWith<Color?>(
+                              (states) => Colors.orange.shade50,
+                            ),
+                            dataRowColor: MaterialStateProperty.resolveWith<Color?>(
+                              (states) => Colors.white,
+                            ),
+                            border: TableBorder.all(
+                              color: Colors.grey.shade200,
+                              width: 1,
+                            ),
+                            columns: [
+                              DataColumn(
+                                label: Text(
+                                  "Solicitante",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  "Equipo",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  "Fecha solicitud",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  "Acciones",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            rows: solicitudes.map<DataRow>((solicitud) {
+                              final data = solicitud.data() as Map<String, dynamic>;
+                              final nombre = data['nombre'] ?? '---';
+                              final equipo = data['equipos']?[0]?['nombre'] ?? '---';
+                              final fechaEnvio = data['fecha_envio'] is Timestamp
+                                  ? DateFormat('dd/MM/yyyy').format(
+                                      (data['fecha_envio'] as Timestamp).toDate())
+                                  : '---';
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Text(
+                                      nombre,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Text(
+                                      equipo,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Text(
+                                      fechaEnvio,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Botón Visualizar
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade100,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: IconButton(
+                                            icon: Icon(Icons.visibility, color: Colors.blue.shade700),
+                                            tooltip: "Visualizar",
+                                            onPressed: () => _mostrarDetallesSolicitud(context, solicitud),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Botón Aceptar
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.shade100,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: IconButton(
+                                            icon: Icon(Icons.check_circle, color: Colors.green.shade700),
+                                            tooltip: "Aceptar",
+                                            onPressed: () => _gestionarSolicitud(solicitud, "Aceptada"),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Botón Rechazar
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade100,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: IconButton(
+                                            icon: Icon(Icons.cancel, color: Colors.red.shade700),
+                                            tooltip: "Rechazar",
+                                            onPressed: () => _gestionarSolicitud(solicitud, "Rechazada"),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      );
+              },
+            ),
+          ),
+        ],
       ),
+        );
+      },
     );
   }
 
@@ -1117,5 +2230,134 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     } finally {
       if (mounted) setState(() => _procesandoSolicitud = false);
     }
+  }
+}
+
+// Widget para los botones de la barra lateral mejorado
+class _SidebarButton extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  
+  const _SidebarButton({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  State<_SidebarButton> createState() => _SidebarButtonState();
+}
+
+class _SidebarButtonState extends State<_SidebarButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                _animationController.forward().then((_) {
+                  _animationController.reverse();
+                });
+                widget.onTap();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: widget.selected
+                      ? const Color(0xFFEFF6FF)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: widget.selected
+                      ? Border.all(
+                          color: const Color(0xFF3B82F6),
+                          width: 2,
+                        )
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: widget.selected
+                            ? const Color(0xFF3B82F6)
+                            : const Color(0xFF94A3B8),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        widget.icon,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        style: TextStyle(
+                          color: widget.selected
+                              ? const Color(0xFF1E40AF)
+                              : const Color(0xFF475569),
+                          fontWeight: widget.selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    if (widget.selected)
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
