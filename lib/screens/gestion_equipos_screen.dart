@@ -16,6 +16,14 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
   String _busqueda = '';
   int _rowsPerPage = 8;
   int _page = 0;
+  
+  // Filtros específicos
+  String _filtroCondicion = '';
+  String _filtroEstado = '';
+  String _filtroMarca = '';
+  String _filtroModelo = '';
+  String _filtroNumero = '';
+  String _filtroTipoEquipo = '';
 
   // Para imágenes seleccionadas
   List<XFile?> _imagenes = [null, null, null];
@@ -375,125 +383,285 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFC),
           appBar: AppBar(
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.devices, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Text("Gestionar Equipos"),
-              ],
-            ),
+            automaticallyImplyLeading: false, // Quita la flecha hacia atrás automática
             backgroundColor: Colors.white,
             elevation: 1,
-            actions: [
-              if (!isMobile) ...[
-                SizedBox(
-                  width: isTablet ? 200 : 260,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Buscar equipos...",
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        isDense: true,
-                      ),
-                      onChanged: (v) {
-                        setState(() {
-                          _busqueda = v.trim().toLowerCase();
-                          _page = 0;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              ElevatedButton.icon(
-                onPressed: () => _mostrarDialogoEquipo(),
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(isMobile ? "" : "Agregar equipo"),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 12 : 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                  backgroundColor: const Color(0xFFF59E0B),
-                  foregroundColor: Colors.white,
-                  textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-              ),
-              const SizedBox(width: 16),
-            ],
+            toolbarHeight: 0, // Reduce la altura del AppBar para aprovechar más espacio
           ),
           body: Padding(
             padding: EdgeInsets.all(isMobile ? 12 : 24),
             child: Column(
               children: [
-                // Barra de búsqueda para móviles
-                if (isMobile) ...[
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: "Buscar por nombre, código UC o categoría...",
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                // Zona de búsqueda y botón agregar equipo
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Fila principal con búsqueda general y botón
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: "Búsqueda general...",
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                ),
+                                onChanged: (v) {
+                                  setState(() {
+                                    _busqueda = v.trim().toLowerCase();
+                                    _page = 0;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => _mostrarDialogoEquipo(),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text("Agregar equipo"),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                elevation: 0,
+                                backgroundColor: const Color(0xFFF59E0B),
+                                foregroundColor: Colors.white,
+                                textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              ),
+                            ),
+                          ],
                         ),
-                        onChanged: (v) {
-                          setState(() {
-                            _busqueda = v.trim().toLowerCase();
-                            _page = 0;
-                          });
-                        },
-                      ),
+                        const SizedBox(height: 12),
+                        // Filtros específicos en grid
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: isMobile ? 2 : 4,
+                          childAspectRatio: isMobile ? 3.5 : 4.5,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          children: [
+                            // Filtro Condición
+                            DropdownButtonFormField<String>(
+                              value: _filtroCondicion.isEmpty ? null : _filtroCondicion,
+                              decoration: InputDecoration(
+                                hintText: "Condición",
+                                prefixIcon: const Icon(Icons.check_circle, size: 16),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                isDense: true,
+                              ),
+                              items: [
+                                const DropdownMenuItem(value: '', child: Text('Todas')),
+                                const DropdownMenuItem(value: 'nuevo', child: Text('Nuevo')),
+                                const DropdownMenuItem(value: 'bueno', child: Text('Bueno')),
+                                const DropdownMenuItem(value: 'regular', child: Text('Regular')),
+                                const DropdownMenuItem(value: 'defectuoso', child: Text('Defectuoso')),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _filtroCondicion = value ?? '';
+                                  _page = 0;
+                                });
+                              },
+                            ),
+                            // Filtro Estado
+                            DropdownButtonFormField<String>(
+                              value: _filtroEstado.isEmpty ? null : _filtroEstado,
+                              decoration: InputDecoration(
+                                hintText: "Estado",
+                                prefixIcon: const Icon(Icons.info, size: 16),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                isDense: true,
+                              ),
+                              items: [
+                                const DropdownMenuItem(value: '', child: Text('Todos')),
+                                const DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
+                                const DropdownMenuItem(value: 'disponible', child: Text('Disponible')),
+                                const DropdownMenuItem(value: 'en uso', child: Text('En uso')),
+                                const DropdownMenuItem(value: 'mantenimiento', child: Text('Mantenimiento')),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _filtroEstado = value ?? '';
+                                  _page = 0;
+                                });
+                              },
+                            ),
+                            // Filtro Marca
+                            TextField(
+                              decoration: InputDecoration(
+                                hintText: "Marca",
+                                prefixIcon: const Icon(Icons.business, size: 16),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                isDense: true,
+                              ),
+                              onChanged: (v) {
+                                setState(() {
+                                  _filtroMarca = v.trim().toLowerCase();
+                                  _page = 0;
+                                });
+                              },
+                            ),
+                            // Filtro Modelo
+                            TextField(
+                              decoration: InputDecoration(
+                                hintText: "Modelo",
+                                prefixIcon: const Icon(Icons.memory, size: 16),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                isDense: true,
+                              ),
+                              onChanged: (v) {
+                                setState(() {
+                                  _filtroModelo = v.trim().toLowerCase();
+                                  _page = 0;
+                                });
+                              },
+                            ),
+                            // Filtro Número
+                            TextField(
+                              decoration: InputDecoration(
+                                hintText: "Número",
+                                prefixIcon: const Icon(Icons.confirmation_number, size: 16),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                isDense: true,
+                              ),
+                              onChanged: (v) {
+                                setState(() {
+                                  _filtroNumero = v.trim().toLowerCase();
+                                  _page = 0;
+                                });
+                              },
+                            ),
+                            // Filtro Tipo de Equipo
+                            DropdownButtonFormField<String>(
+                              value: _filtroTipoEquipo.isEmpty ? null : _filtroTipoEquipo,
+                              decoration: InputDecoration(
+                                hintText: "Tipo",
+                                prefixIcon: const Icon(Icons.star, size: 16),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                  borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                isDense: true,
+                              ),
+                              items: [
+                                const DropdownMenuItem(value: '', child: Text('Todos')),
+                                const DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                                const DropdownMenuItem(value: 'premium', child: Text('Premium')),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _filtroTipoEquipo = value ?? '';
+                                  _page = 0;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
+                ),
+                const SizedBox(height: 16),
                 // Contenido principal
                 Expanded(
                   child: Card(
@@ -513,13 +681,71 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                             .map((e) => {...?e.data() as Map<String, dynamic>, '_id': e.id})
                             .toList();
                         
-                        // Filtro de búsqueda
+                        // Aplicar filtros
                         if (_busqueda.isNotEmpty) {
                           equipos = equipos.where((e) {
                             final nombre = (e['nombre'] ?? '').toString().toLowerCase();
                             final codigoUC = (e['codigoUC'] ?? '').toString().toLowerCase();
                             final categoria = (e['categoria'] ?? '').toString().toLowerCase();
-                            return nombre.contains(_busqueda) || codigoUC.contains(_busqueda) || categoria.contains(_busqueda);
+                            final condicion = (e['condicion'] ?? '').toString().toLowerCase();
+                            final estado = (e['estado'] ?? '').toString().toLowerCase();
+                            final marca = (e['marca'] ?? '').toString().toLowerCase();
+                            final modelo = (e['modelo'] ?? '').toString().toLowerCase();
+                            final numero = (e['numero'] ?? '').toString().toLowerCase();
+                            final tipoEquipo = (e['tipoEquipo'] ?? '').toString().toLowerCase();
+                            
+                            return nombre.contains(_busqueda) || 
+                                   codigoUC.contains(_busqueda) || 
+                                   categoria.contains(_busqueda) ||
+                                   condicion.contains(_busqueda) ||
+                                   estado.contains(_busqueda) ||
+                                   marca.contains(_busqueda) ||
+                                   modelo.contains(_busqueda) ||
+                                   numero.contains(_busqueda) ||
+                                   tipoEquipo.contains(_busqueda);
+                          }).toList();
+                        }
+                        
+                        // Filtros específicos
+                        if (_filtroCondicion.isNotEmpty) {
+                          equipos = equipos.where((e) {
+                            final condicion = (e['condicion'] ?? '').toString().toLowerCase();
+                            return condicion == _filtroCondicion;
+                          }).toList();
+                        }
+                        
+                        if (_filtroEstado.isNotEmpty) {
+                          equipos = equipos.where((e) {
+                            final estado = (e['estado'] ?? '').toString().toLowerCase();
+                            return estado == _filtroEstado;
+                          }).toList();
+                        }
+                        
+                        if (_filtroMarca.isNotEmpty) {
+                          equipos = equipos.where((e) {
+                            final marca = (e['marca'] ?? '').toString().toLowerCase();
+                            return marca.contains(_filtroMarca);
+                          }).toList();
+                        }
+                        
+                        if (_filtroModelo.isNotEmpty) {
+                          equipos = equipos.where((e) {
+                            final modelo = (e['modelo'] ?? '').toString().toLowerCase();
+                            return modelo.contains(_filtroModelo);
+                          }).toList();
+                        }
+                        
+                        if (_filtroNumero.isNotEmpty) {
+                          equipos = equipos.where((e) {
+                            final numero = (e['numero'] ?? '').toString().toLowerCase();
+                            return numero.contains(_filtroNumero);
+                          }).toList();
+                        }
+                        
+                        if (_filtroTipoEquipo.isNotEmpty) {
+                          equipos = equipos.where((e) {
+                            final tipoEquipo = (e['tipoEquipo'] ?? '').toString().toLowerCase();
+                            return tipoEquipo == _filtroTipoEquipo;
                           }).toList();
                         }
                         
@@ -564,6 +790,11 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                                   Text('Categoría: ${equipo['categoria'] ?? ''}'),
                                                   Text('Código: ${equipo['codigoUC'] ?? ''}'),
                                                   Text('Estado: ${equipo['estado'] ?? ''}'),
+                                                  Text('Condición: ${equipo['condicion'] ?? ''}'),
+                                                  Text('Marca: ${equipo['marca'] ?? ''}'),
+                                                  Text('Modelo: ${equipo['modelo'] ?? ''}'),
+                                                  Text('Número: ${equipo['numero'] ?? ''}'),
+                                                  Text('Tipo: ${equipo['tipoEquipo'] ?? ''}'),
                                                 ],
                                               ),
                                               trailing: Row(
@@ -611,44 +842,54 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                             children: [
                               Expanded(
                                 child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: DataTable(
-                                    headingRowColor: MaterialStateProperty.resolveWith<Color?>((states) => const Color(0xFFFFF7ED)),
-                                    dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.white),
-                                    columnSpacing: isTablet ? 16 : 24,
-                                    border: TableBorder.all(color: const Color(0xFFE0E7EF), width: 1),
-                                    columns: [
-                                      const DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Categoría', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Código UC', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Condición', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    ],
-                                    rows: pageItems.map((e) {
-                                      return DataRow(cells: [
-                                        DataCell(Text(e['nombre'] ?? '')),
-                                        DataCell(Text(e['categoria'] ?? '')),
-                                        DataCell(Text(e['codigoUC'] ?? '')),
-                                        DataCell(Text(e['estado'] ?? '')),
-                                        DataCell(Text(e['condicion'] ?? '')),
-                                        DataCell(Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.edit, color: Color(0xFFF59E0B)),
-                                              tooltip: 'Editar',
-                                              onPressed: () => _mostrarDialogoEquipo(equipo: e),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete, color: Colors.red),
-                                              tooltip: 'Eliminar',
-                                              onPressed: () => _eliminarEquipo(context, e['_id']),
-                                            ),
-                                          ],
-                                        )),
-                                      ]);
-                                    }).toList(),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      headingRowColor: MaterialStateProperty.resolveWith<Color?>((states) => const Color(0xFFFFF7ED)),
+                                      dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.white),
+                                      columnSpacing: isTablet ? 16 : 24,
+                                      border: TableBorder.all(color: const Color(0xFFE0E7EF), width: 1),
+                                      columns: [
+                                        const DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Categoría', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Código UC', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Condición', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Marca', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Modelo', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Número', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      ],
+                                      rows: pageItems.map((e) {
+                                        return DataRow(cells: [
+                                          DataCell(Text(e['nombre'] ?? '')),
+                                          DataCell(Text(e['categoria'] ?? '')),
+                                          DataCell(Text(e['codigoUC'] ?? '')),
+                                          DataCell(Text(e['estado'] ?? '')),
+                                          DataCell(Text(e['condicion'] ?? '')),
+                                          DataCell(Text(e['marca'] ?? '')),
+                                          DataCell(Text(e['modelo'] ?? '')),
+                                          DataCell(Text(e['numero'] ?? '')),
+                                          DataCell(Text(e['tipoEquipo'] ?? '')),
+                                          DataCell(Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.edit, color: Color(0xFFF59E0B)),
+                                                tooltip: 'Editar',
+                                                onPressed: () => _mostrarDialogoEquipo(equipo: e),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red),
+                                                tooltip: 'Eliminar',
+                                                onPressed: () => _eliminarEquipo(context, e['_id']),
+                                              ),
+                                            ],
+                                          )),
+                                        ]);
+                                      }).toList(),
+                                    ),
                                   ),
                                 ),
                               ),

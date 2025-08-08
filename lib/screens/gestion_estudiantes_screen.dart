@@ -14,6 +14,58 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
   String _busqueda = '';
   int _rowsPerPage = 8;
   int _page = 0;
+  String _filtroTipoUsuario = '';
+  String _filtroPuntos = '';
+
+  // Función para determinar el tipo de usuario basado en los puntos
+  String _getTipoUsuario(int puntos) {
+    if (puntos >= 20) {
+      return 'Usuario Premium';
+    } else if (puntos >= 10) {
+      return 'Buen Usuario';
+    } else if (puntos >= 5) {
+      return 'Usuario Regular';
+    } else if (puntos >= 1) {
+      return 'Usuario en Riesgo';
+    } else {
+      return 'Usuario Bloqueado';
+    }
+  }
+
+  Widget _getTipoUsuarioChip(int puntos) {
+    Color color;
+    String texto;
+    
+    if (puntos >= 20) {
+      color = Colors.blue;
+      texto = 'Usuario Premium';
+    } else if (puntos >= 10) {
+      color = Colors.green;
+      texto = 'Buen Usuario';
+    } else if (puntos >= 5) {
+      color = Colors.yellow;
+      texto = 'Usuario Regular';
+    } else if (puntos >= 1) {
+      color = Colors.orange;
+      texto = 'Usuario en Riesgo';
+    } else {
+      color = Colors.red;
+      texto = 'Usuario Bloqueado';
+    }
+    
+    return Chip(
+      label: Text(
+        texto,
+        style: TextStyle(
+          color: color == Colors.yellow ? Colors.black : Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+      ),
+      backgroundColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    );
+  }
 
   void _mostrarDialogoRegistro(BuildContext context) {
     final nombreController = TextEditingController();
@@ -21,6 +73,7 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
     final emailController = TextEditingController();
     final celularController = TextEditingController();
     final passwordController = TextEditingController();
+    final puntosController = TextEditingController(text: '10');
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -87,6 +140,8 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                         _inputField(celularController, 'Celular', Icons.phone, tipo: TextInputType.phone, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
                         _inputField(passwordController, 'Contraseña', Icons.lock, tipo: TextInputType.visiblePassword, isPassword: true, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
+                        const SizedBox(height: 16),
+                        _inputField(puntosController, 'Puntos', Icons.stars, tipo: TextInputType.number, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 32),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -146,6 +201,14 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                   Navigator.of(context).pop(); // Cerrar loading
 
                                   if (resultado['success']) {
+                                    // Actualizar los puntos después de crear el estudiante
+                                    if (resultado['uid'] != null) {
+                                      final puntos = int.tryParse(puntosController.text.trim()) ?? 10;
+                                      await FirebaseFirestore.instance.collection('usuarios').doc(resultado['uid']).update({
+                                        'puntos': puntos,
+                                      });
+                                    }
+                                    
                                     Navigator.of(context).pop(); // Cerrar diálogo de registro
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
@@ -193,6 +256,7 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
     final emailController = TextEditingController(text: estudiante['email'] ?? '');
     final celularController = TextEditingController(text: estudiante['celular'] ?? '');
     final passwordController = TextEditingController(text: estudiante['password'] ?? '');
+    final puntosController = TextEditingController(text: (estudiante['puntos'] ?? 0).toString());
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -259,6 +323,8 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                         _inputField(celularController, 'Celular', Icons.phone, tipo: TextInputType.phone, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
                         _inputField(passwordController, 'Contraseña', Icons.lock, tipo: TextInputType.visiblePassword, isPassword: true, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
+                        const SizedBox(height: 16),
+                        _inputField(puntosController, 'Puntos', Icons.stars, tipo: TextInputType.number, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 32),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -291,6 +357,7 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                   'email': emailController.text.trim(),
                                   'celular': celularController.text.trim(),
                                   'password': passwordController.text.trim(),
+                                  'puntos': int.tryParse(puntosController.text.trim()) ?? 0, // Mantener los puntos existentes
                                 });
                                 Navigator.of(context).pop();
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -341,29 +408,36 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
     }
   }
 
-  Widget _inputField(TextEditingController controller, String label, IconData icon, {TextInputType tipo = TextInputType.text, bool isPassword = false, String? Function(String?)? validator}) {
+  Widget _inputField(TextEditingController controller, String label, IconData icon, {TextInputType tipo = TextInputType.text, bool isPassword = false, String? Function(String?)? validator, bool enabled = true}) {
     return TextFormField(
       controller: controller,
       keyboardType: tipo,
       obscureText: isPassword,
-      style: const TextStyle(fontWeight: FontWeight.w500, color: Color(0xFF1E293B)),
+      style: TextStyle(
+        fontWeight: FontWeight.w500, 
+        color: enabled ? const Color(0xFF1E293B) : const Color(0xFF64748B)
+      ),
       validator: validator,
+      enabled: enabled,
       decoration: InputDecoration(
         prefixIcon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
+            color: enabled ? const Color(0xFFF3F4F6) : const Color(0xFFE5E7EB),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: const Color(0xFF8B5CF6)),
+          child: Icon(icon, color: enabled ? const Color(0xFF8B5CF6) : const Color(0xFF9CA3AF)),
         ),
         labelText: label,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+        labelStyle: TextStyle(
+          fontWeight: FontWeight.w600, 
+          color: enabled ? const Color(0xFF64748B) : const Color(0xFF9CA3AF)
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Color(0xFFE0E7EF)) ),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Color(0xFFE0E7EF)) ),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Color(0xFF8B5CF6), width: 2)),
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: enabled ? const Color(0xFFF8FAFC) : const Color(0xFFF3F4F6),
         contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
       ),
     );
@@ -379,125 +453,160 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFC),
           appBar: AppBar(
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.school, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Text("Gestionar Estudiantes"),
-              ],
-            ),
+            automaticallyImplyLeading: false, // Quita la flecha hacia atrás automática
             backgroundColor: Colors.white,
             elevation: 1,
-            actions: [
-              if (!isMobile) ...[
-                SizedBox(
-                  width: isTablet ? 200 : 260,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Buscar estudiantes...",
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        isDense: true,
-                      ),
-                      onChanged: (v) {
-                        setState(() {
-                          _busqueda = v.trim().toLowerCase();
-                          _page = 0;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              ElevatedButton.icon(
-                onPressed: () => _mostrarDialogoRegistro(context),
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(isMobile ? "" : "Nuevo estudiante"),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 12 : 16,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 0,
-                  backgroundColor: const Color(0xFF8B5CF6),
-                  foregroundColor: Colors.white,
-                  textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-              ),
-              const SizedBox(width: 16),
-            ],
+            toolbarHeight: 0, // Reduce la altura del AppBar para aprovechar más espacio
           ),
           body: Padding(
             padding: EdgeInsets.all(isMobile ? 12 : 24),
             child: Column(
               children: [
-                // Barra de búsqueda para móviles
-                if (isMobile) ...[
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: "Buscar por nombre, email o DNI...",
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                // Zona de búsqueda y botón nuevo estudiante
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Fila principal con búsqueda y botón
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 1,
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  hintText: "Buscar por nombre, email, DNI o puntos...",
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                ),
+                                onChanged: (v) {
+                                  setState(() {
+                                    _busqueda = v.trim().toLowerCase();
+                                    _page = 0;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => _mostrarDialogoRegistro(context),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text("Nuevo estudiante"),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                elevation: 0,
+                                backgroundColor: const Color(0xFF8B5CF6),
+                                foregroundColor: Colors.white,
+                                textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              ),
+                            ),
+                          ],
                         ),
-                        onChanged: (v) {
-                          setState(() {
-                            _busqueda = v.trim().toLowerCase();
-                            _page = 0;
-                          });
-                        },
-                      ),
+                        const SizedBox(height: 12),
+                        // Filtros adicionales en una sola línea
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _filtroTipoUsuario.isEmpty ? null : _filtroTipoUsuario,
+                                decoration: InputDecoration(
+                                  hintText: "Filtrar por tipo de usuario",
+                                  prefixIcon: const Icon(Icons.person),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                ),
+                                items: [
+                                  const DropdownMenuItem(value: '', child: Text('Todos los tipos')),
+                                  const DropdownMenuItem(value: 'Usuario Premium', child: Text('Usuario Premium')),
+                                  const DropdownMenuItem(value: 'Buen Usuario', child: Text('Buen Usuario')),
+                                  const DropdownMenuItem(value: 'Usuario Regular', child: Text('Usuario Regular')),
+                                  const DropdownMenuItem(value: 'Usuario en Riesgo', child: Text('Usuario en Riesgo')),
+                                  const DropdownMenuItem(value: 'Usuario Bloqueado', child: Text('Usuario Bloqueado')),
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _filtroTipoUsuario = value ?? '';
+                                    _page = 0;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _filtroPuntos.isEmpty ? null : _filtroPuntos,
+                                decoration: InputDecoration(
+                                  hintText: "Filtrar por puntos",
+                                  prefixIcon: const Icon(Icons.stars),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF8FAFC),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                ),
+                                items: [
+                                  const DropdownMenuItem(value: '', child: Text('Todos los puntos')),
+                                  const DropdownMenuItem(value: '20+', child: Text('20+ puntos')),
+                                  const DropdownMenuItem(value: '10-19', child: Text('10-19 puntos')),
+                                  const DropdownMenuItem(value: '5-9', child: Text('5-9 puntos')),
+                                  const DropdownMenuItem(value: '1-4', child: Text('1-4 puntos')),
+                                  const DropdownMenuItem(value: '0', child: Text('0 puntos')),
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    _filtroPuntos = value ?? '';
+                                    _page = 0;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
+                ),
+                const SizedBox(height: 16),
                 // Contenido principal
                 Expanded(
                   child: Card(
@@ -520,13 +629,39 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                             .map((e) => {...?e.data() as Map<String, dynamic>, '_id': e.id})
                             .toList();
                         
-                        // Filtro de búsqueda
+                        // Aplicar filtros
                         if (_busqueda.isNotEmpty) {
                           estudiantes = estudiantes.where((e) {
                             final nombre = (e['nombre'] ?? '').toString().toLowerCase();
                             final email = (e['email'] ?? '').toString().toLowerCase();
                             final dni = (e['dni'] ?? '').toString().toLowerCase();
-                            return nombre.contains(_busqueda) || email.contains(_busqueda) || dni.contains(_busqueda);
+                            final puntos = (e['puntos'] ?? 0).toString();
+                            return nombre.contains(_busqueda) || email.contains(_busqueda) || dni.contains(_busqueda) || puntos.contains(_busqueda);
+                          }).toList();
+                        }
+                        if (_filtroTipoUsuario.isNotEmpty) {
+                          estudiantes = estudiantes.where((e) {
+                            final tipoUsuario = _getTipoUsuario(e['puntos'] ?? 0);
+                            return tipoUsuario == _filtroTipoUsuario;
+                          }).toList();
+                        }
+                        if (_filtroPuntos.isNotEmpty) {
+                          estudiantes = estudiantes.where((e) {
+                            final puntosEstudiante = e['puntos'] ?? 0;
+                            switch (_filtroPuntos) {
+                              case '20+':
+                                return puntosEstudiante >= 20;
+                              case '10-19':
+                                return puntosEstudiante >= 10 && puntosEstudiante <= 19;
+                              case '5-9':
+                                return puntosEstudiante >= 5 && puntosEstudiante <= 9;
+                              case '1-4':
+                                return puntosEstudiante >= 1 && puntosEstudiante <= 4;
+                              case '0':
+                                return puntosEstudiante == 0;
+                              default:
+                                return true;
+                            }
                           }).toList();
                         }
                         
@@ -571,6 +706,9 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                                   Text('DNI: ${estudiante['dni'] ?? ''}'),
                                                   Text('Email: ${estudiante['email'] ?? ''}'),
                                                   Text('Celular: ${estudiante['celular'] ?? ''}'),
+                                                  Text('Puntos: ${estudiante['puntos'] ?? 0}'),
+                                                  const SizedBox(height: 4),
+                                                  _getTipoUsuarioChip(estudiante['puntos'] ?? 0),
                                                 ],
                                               ),
                                               trailing: Row(
@@ -618,42 +756,49 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                             children: [
                               Expanded(
                                 child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: DataTable(
-                                    headingRowColor: MaterialStateProperty.resolveWith<Color?>((states) => const Color(0xFFEFF6FF)),
-                                    dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.white),
-                                    columnSpacing: isTablet ? 16 : 24,
-                                    border: TableBorder.all(color: const Color(0xFFE0E7EF), width: 1),
-                                    columns: [
-                                      const DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('DNI', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Celular', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    ],
-                                    rows: pageItems.map((e) {
-                                      return DataRow(cells: [
-                                        DataCell(Text(e['nombre'] ?? '')),
-                                        DataCell(Text(e['dni'] ?? '')),
-                                        DataCell(Text(e['email'] ?? '')),
-                                        DataCell(Text(e['celular'] ?? '')),
-                                        DataCell(Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.edit, color: Color(0xFF8B5CF6)),
-                                              tooltip: 'Editar',
-                                              onPressed: () => _mostrarDialogoEditar(context, e, e['_id']),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete, color: Colors.red),
-                                              tooltip: 'Eliminar',
-                                              onPressed: () => _eliminarEstudiante(context, e['_id']),
-                                            ),
-                                          ],
-                                        )),
-                                      ]);
-                                    }).toList(),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      headingRowColor: MaterialStateProperty.resolveWith<Color?>((states) => const Color(0xFFEFF6FF)),
+                                      dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.white),
+                                      columnSpacing: isTablet ? 16 : 24,
+                                      border: TableBorder.all(color: const Color(0xFFE0E7EF), width: 1),
+                                      columns: [
+                                        const DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('DNI', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Celular', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Puntos', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Tipo de Usuario', style: TextStyle(fontWeight: FontWeight.bold))),
+                                        const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                                      ],
+                                      rows: pageItems.map((e) {
+                                        final puntos = e['puntos'] ?? 0;
+                                        return DataRow(cells: [
+                                          DataCell(Text(e['nombre'] ?? '')),
+                                          DataCell(Text(e['dni'] ?? '')),
+                                          DataCell(Text(e['email'] ?? '')),
+                                          DataCell(Text(e['celular'] ?? '')),
+                                          DataCell(Text(puntos.toString())),
+                                          DataCell(_getTipoUsuarioChip(puntos)),
+                                          DataCell(Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.edit, color: Color(0xFF8B5CF6)),
+                                                tooltip: 'Editar',
+                                                onPressed: () => _mostrarDialogoEditar(context, e, e['_id']),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red),
+                                                tooltip: 'Eliminar',
+                                                onPressed: () => _eliminarEstudiante(context, e['_id']),
+                                              ),
+                                            ],
+                                          )),
+                                        ]);
+                                      }).toList(),
+                                    ),
                                   ),
                                 ),
                               ),

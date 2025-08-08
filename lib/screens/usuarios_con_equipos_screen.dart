@@ -30,6 +30,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   String filtroNombreSolicitante = "";
   bool ordenarRecientesPrimero = true;
   int _selectedSection = 0; // 0: Usuarios, 1: Solicitudes, 2: Gestionar Estudiantes, 3: Gestionar Equipos
+  bool _sidebarCollapsed = false; // Controla si el panel lateral está colapsado
 
   @override
   void initState() {
@@ -246,14 +247,15 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
               ) : null,
               body: Row(
                 children: [
-                  // Barra lateral mejorada - responsive
+                  // Barra lateral mejorada - responsive y colapsable
                   if (!isMobile) ...[
-                    Container(
-                      width: isTablet ? 250 : 300,
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: _sidebarCollapsed ? 80 : (isTablet ? 250 : 300),
                       child: _buildSidebarContent(),
                     ),
                   ],
-                  // Contenido principal mejorado - responsive
+                                    // Contenido principal mejorado - responsive
                   Expanded(
                     child: Container(
                       margin: EdgeInsets.all(isMobile ? 12 : 24),
@@ -277,232 +279,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Header del contenido mejorado - responsive
-                          Container(
-                            padding: EdgeInsets.all(isMobile ? 16 : 32),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(isMobile ? 16 : 24),
-                                topRight: Radius.circular(isMobile ? 16 : 24),
-                              ),
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: const Color(0xFFE2E8F0),
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                            child: isMobile 
-                              ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: _selectedSection == 0
-                                                  ? [const Color(0xFF10B981), const Color(0xFF34D399)]
-                                                  : _selectedSection == 1
-                                                      ? [const Color(0xFFF59E0B), const Color(0xFFFBBF24)]
-                                                      : _selectedSection == 2
-                                                          ? [const Color(0xFF8B5CF6), const Color(0xFFA78BFA)]
-                                                          : [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Icon(
-                                            _selectedSection == 0
-                                                ? Icons.people_alt
-                                                : _selectedSection == 1
-                                                    ? Icons.assignment_turned_in
-                                                    : _selectedSection == 2
-                                                        ? Icons.school
-                                                        : Icons.devices,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            _selectedSection == 0
-                                                ? 'Usuarios con Equipos'
-                                                : _selectedSection == 1
-                                                    ? 'Solicitudes'
-                                                    : _selectedSection == 2
-                                                        ? 'Gestionar Estudiantes'
-                                                        : 'Gestionar Equipos',
-                                            style: TextStyle(
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF1E293B),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _selectedSection == 0
-                                          ? 'Gestiona los préstamos activos de equipos'
-                                          : _selectedSection == 1
-                                              ? 'Revisa y aprueba solicitudes de préstamo'
-                                              : _selectedSection == 2
-                                                  ? 'Administra la información de estudiantes'
-                                                  : 'Administra la información de equipos',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: const Color(0xFF64748B),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    if (_selectedSection == 0 || _selectedSection == 1) ...[
-                                      const SizedBox(height: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF0F9FF),
-                                          borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(
-                                            color: const Color(0xFF0EA5E9),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              width: 6,
-                                              height: 6,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF0EA5E9),
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Tiempo Real',
-                                              style: TextStyle(
-                                                color: const Color(0xFF0EA5E9),
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                )
-                              : Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: _selectedSection == 0
-                                              ? [const Color(0xFF10B981), const Color(0xFF34D399)]
-                                              : _selectedSection == 1
-                                                  ? [const Color(0xFFF59E0B), const Color(0xFFFBBF24)]
-                                                  : _selectedSection == 2
-                                                      ? [const Color(0xFF8B5CF6), const Color(0xFFA78BFA)]
-                                                      : [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        _selectedSection == 0
-                                            ? Icons.people_alt
-                                            : _selectedSection == 1
-                                                ? Icons.assignment_turned_in
-                                                : _selectedSection == 2
-                                                    ? Icons.school
-                                                    : Icons.devices,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            _selectedSection == 0
-                                                ? 'Usuarios con Equipos'
-                                                : _selectedSection == 1
-                                                    ? 'Solicitudes'
-                                                    : _selectedSection == 2
-                                                        ? 'Gestionar Estudiantes'
-                                                        : 'Gestionar Equipos',
-                                            style: TextStyle(
-                                              fontSize: 28,
-                                              fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF1E293B),
-                                              letterSpacing: -0.5,
-                                            ),
-                                          ),
-                                          Text(
-                                            _selectedSection == 0
-                                                ? 'Gestiona los préstamos activos de equipos'
-                                                : _selectedSection == 1
-                                                    ? 'Revisa y aprueba solicitudes de préstamo'
-                                                    : _selectedSection == 2
-                                                        ? 'Administra la información de estudiantes'
-                                                        : 'Administra la información de equipos',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: const Color(0xFF64748B),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (_selectedSection == 0 || _selectedSection == 1)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF0F9FF),
-                                          borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(
-                                            color: const Color(0xFF0EA5E9),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              width: 8,
-                                              height: 8,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF0EA5E9),
-                                                shape: BoxShape.circle,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Tiempo Real',
-                                              style: TextStyle(
-                                                color: const Color(0xFF0EA5E9),
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                          ),
                           // Contenido dinámico
                           Expanded(
                             child: Container(
@@ -627,7 +403,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         children: [
           // Header de la barra lateral mejorado
           Container(
-            padding: const EdgeInsets.all(28),
+            padding: EdgeInsets.all(_sidebarCollapsed ? 16 : 28),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -649,55 +425,68 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(_sidebarCollapsed ? 8 : 12),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(_sidebarCollapsed ? 8 : 12),
                   ),
                   child: Icon(
                     Icons.admin_panel_settings,
                     color: Colors.white,
-                    size: 28,
+                    size: _sidebarCollapsed ? 20 : 28,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Panel de Control',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
+                if (!_sidebarCollapsed) ...[
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Panel de Control',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Gestión de Equipos',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 4),
+                        Text(
+                          'Gestión de Equipos',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
+                // Botón para colapsar/expandir
+                if (!_sidebarCollapsed)
+                  IconButton(
+                    onPressed: () => setState(() => _sidebarCollapsed = true),
+                    icon: const Icon(Icons.chevron_left, color: Colors.white),
+                    tooltip: 'Colapsar panel',
+                  ),
               ],
             ),
           ),
           // Menú de navegación mejorado
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+            padding: EdgeInsets.symmetric(
+              vertical: 32, 
+              horizontal: _sidebarCollapsed ? 8 : 16
+            ),
             child: Column(
               children: [
                 _SidebarButton(
                   icon: Icons.people_alt,
                   label: 'Usuarios con Equipos',
                   selected: _selectedSection == 0,
+                  collapsed: _sidebarCollapsed,
                   onTap: () => setState(() => _selectedSection = 0),
                 ),
                 const SizedBox(height: 12),
@@ -705,6 +494,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                   icon: Icons.assignment_turned_in,
                   label: 'Solicitudes',
                   selected: _selectedSection == 1,
+                  collapsed: _sidebarCollapsed,
                   onTap: () => setState(() => _selectedSection = 1),
                 ),
                 const SizedBox(height: 12),
@@ -712,6 +502,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                   icon: Icons.school,
                   label: 'Gestionar Estudiantes',
                   selected: _selectedSection == 2,
+                  collapsed: _sidebarCollapsed,
                   onTap: () => setState(() => _selectedSection = 2),
                 ),
                 const SizedBox(height: 12),
@@ -719,6 +510,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                   icon: Icons.devices,
                   label: 'Gestionar Equipos',
                   selected: _selectedSection == 3,
+                  collapsed: _sidebarCollapsed,
                   onTap: () => setState(() => _selectedSection = 3),
                 ),
               ],
@@ -727,7 +519,10 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           const Spacer(),
           // Botón Cerrar Sesión mejorado
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: _sidebarCollapsed ? 8 : 20, 
+              vertical: 16
+            ),
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -748,88 +543,130 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                   ),
                 ],
               ),
-              child: ElevatedButton.icon(
-                onPressed: () => _mostrarConfirmacionCerrarSesion(),
-                icon: Icon(Icons.logout_rounded, color: Colors.white, size: 20),
-                label: Text(
-                  'Cerrar Sesión',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+              child: _sidebarCollapsed
+                  ? IconButton(
+                      onPressed: () => _mostrarConfirmacionCerrarSesion(),
+                      icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+                      tooltip: 'Cerrar Sesión',
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: () => _mostrarConfirmacionCerrarSesion(),
+                      icon: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+                      label: const Text(
+                        'Cerrar Sesión',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
             ),
           ),
           // Footer de la barra lateral mejorado
           Container(
-            margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(_sidebarCollapsed ? 8 : 20),
+            padding: EdgeInsets.all(_sidebarCollapsed ? 8 : 16),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(_sidebarCollapsed ? 8 : 16),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
                 width: 1,
               ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF3B82F6),
-                        const Color(0xFF60A5FA),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+            child: _sidebarCollapsed
+                ? Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF3B82F6),
+                          const Color(0xFF60A5FA),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  )
+                : Row(
                     children: [
-                      Text(
-                        'Administrador',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1E293B),
-                          fontSize: 14,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF3B82F6),
+                              const Color(0xFF60A5FA),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 20,
                         ),
                       ),
-                      Text(
-                        'Soporte Audiovisual',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Administrador',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1E293B),
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              'Soporte Audiovisual',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
+          // Botón para expandir cuando está colapsado
+          if (_sidebarCollapsed)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  onPressed: () => setState(() => _sidebarCollapsed = false),
+                  icon: Icon(Icons.chevron_right, color: Colors.grey.shade700, size: 20),
+                  tooltip: 'Expandir panel',
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -936,128 +773,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           padding: EdgeInsets.all(isMobile ? 16 : 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header de la sección - responsive
-              isMobile 
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(Icons.people, color: Colors.orange.shade700, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Usuarios con Equipos",
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                                Text(
-                                  "Gestiona los préstamos activos",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.green.shade700, size: 14),
-                            const SizedBox(width: 6),
-                            Text(
-                              "${estudiantesFiltrados.length} usuarios activos",
-                              style: TextStyle(
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.people, color: Colors.orange.shade700, size: 28),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Usuarios con Equipos",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                          Text(
-                            "Gestiona los préstamos activos",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
-                            const SizedBox(width: 8),
-                            Text(
-                              "${estudiantesFiltrados.length} usuarios activos",
-                              style: TextStyle(
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-          SizedBox(height: isMobile ? 16 : 24),
+                      children: [
           
           // Panel de filtros - responsive
           Container(
@@ -1076,14 +792,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Filtros y Búsqueda",
-                  style: TextStyle(
-                    fontSize: isMobile ? 16 : 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
-                  ),
-                ),
                 SizedBox(height: isMobile ? 12 : 16),
                 isMobile 
                   ? Column(
@@ -1209,8 +917,9 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                     )
                   : Row(
                       children: [
-                        // Filtro por nombre
-                        Expanded(
+                        // Filtro por nombre - más compacto
+                        SizedBox(
+                          width: 250,
                           child: TextField(
                             decoration: InputDecoration(
                               hintText: "Buscar por nombre...",
@@ -1239,7 +948,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                         const SizedBox(width: 16),
                         // Filtro por DNI
                         SizedBox(
-                          width: 200,
+                          width: 180,
                           child: TextField(
                             decoration: InputDecoration(
                               hintText: "Buscar por DNI...",
@@ -1266,74 +975,68 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                             },
                           ),
                         ),
-                      ],
-                    ),
-                if (!isMobile) ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      // Ordenar por tiempo restante
-                      Text(
-                        "Ordenar por: ",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700,
+                        const SizedBox(width: 16),
+                        // Ordenar por tiempo restante
+                        Text(
+                          "Ordenar: ",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButton<bool>(
-                          value: ordenarTiempoRestanteAsc,
-                          underline: Container(),
-                          items: const [
-                            DropdownMenuItem(
-                              value: true,
-                              child: Text("Tiempo restante ↑"),
-                            ),
-                            DropdownMenuItem(
-                              value: false,
-                              child: Text("Tiempo restante ↓"),
-                            ),
-                          ],
-                          onChanged: (val) {
-                            if (val == null) return;
-                            setState(() {
-                              ordenarTiempoRestanteAsc = val;
-                              aplicarFiltros();
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      // Filtrar solo excedidos
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: mostrarSoloExcedidos,
-                            activeColor: Colors.orange.shade600,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButton<bool>(
+                            value: ordenarTiempoRestanteAsc,
+                            underline: Container(),
+                            items: const [
+                              DropdownMenuItem(
+                                value: true,
+                                child: Text("↑"),
+                              ),
+                              DropdownMenuItem(
+                                value: false,
+                                child: Text("↓"),
+                              ),
+                            ],
                             onChanged: (val) {
+                              if (val == null) return;
                               setState(() {
-                                mostrarSoloExcedidos = val ?? false;
+                                ordenarTiempoRestanteAsc = val;
                                 aplicarFiltros();
                               });
                             },
                           ),
-                          Text(
-                            "Mostrar solo excedidos",
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
+                        ),
+                        const SizedBox(width: 16),
+                        // Filtrar solo excedidos
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: mostrarSoloExcedidos,
+                              activeColor: Colors.orange.shade600,
+                              onChanged: (val) {
+                                setState(() {
+                                  mostrarSoloExcedidos = val ?? false;
+                                  aplicarFiltros();
+                                });
+                              },
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+                            Text(
+                              "Solo excedidos",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
               ],
             ),
           ),
@@ -1571,80 +1274,10 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         final isMobile = constraints.maxWidth < 768;
         
         return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header de la sección
-          Row(
+          padding: EdgeInsets.all(isMobile ? 16 : 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.assignment, color: Colors.orange.shade700, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Solicitudes Pendientes",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  Text(
-                    "Gestiona las solicitudes de préstamo",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              // Switch de ordenamiento
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "Antiguos",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: ordenarRecientesPrimero ? Colors.grey.shade600 : Colors.orange.shade700,
-                        fontWeight: ordenarRecientesPrimero ? FontWeight.normal : FontWeight.w600,
-                      ),
-                    ),
-                    Switch(
-                      value: ordenarRecientesPrimero,
-                      onChanged: (val) => setState(() => ordenarRecientesPrimero = val),
-                      activeColor: Colors.orange.shade600,
-                    ),
-                    Text(
-                      "Recientes",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: ordenarRecientesPrimero ? Colors.orange.shade700 : Colors.grey.shade600,
-                        fontWeight: ordenarRecientesPrimero ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
           
           // Panel de filtros
           Container(
@@ -1662,11 +1295,12 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
             ),
             child: Row(
               children: [
-                // Filtro por nombre
-                Expanded(
+                // Filtro por nombre - más compacto
+                SizedBox(
+                  width: 250,
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: "Buscar por nombre del solicitante...",
+                      hintText: "Buscar por nombre...",
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1691,8 +1325,9 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
+                // Filtro por DNI
                 SizedBox(
-                  width: 200,
+                  width: 180,
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: "Buscar por DNI...",
@@ -1718,6 +1353,41 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                         filtroDni = valor.trim();
                       });
                     },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Switch de ordenamiento
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Antiguos",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: ordenarRecientesPrimero ? Colors.grey.shade600 : Colors.orange.shade700,
+                          fontWeight: ordenarRecientesPrimero ? FontWeight.normal : FontWeight.w600,
+                        ),
+                      ),
+                      Switch(
+                        value: ordenarRecientesPrimero,
+                        onChanged: (val) => setState(() => ordenarRecientesPrimero = val),
+                        activeColor: Colors.orange.shade600,
+                      ),
+                      Text(
+                        "Recientes",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: ordenarRecientesPrimero ? Colors.orange.shade700 : Colors.grey.shade600,
+                          fontWeight: ordenarRecientesPrimero ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -2238,12 +1908,14 @@ class _SidebarButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool selected;
+  final bool collapsed;
   final VoidCallback onTap;
   
   const _SidebarButton({
     required this.icon,
     required this.label,
     required this.selected,
+    required this.collapsed,
     required this.onTap,
   });
 
@@ -2297,7 +1969,10 @@ class _SidebarButtonState extends State<_SidebarButton>
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding: EdgeInsets.symmetric(
+                  vertical: 16, 
+                  horizontal: widget.collapsed ? 8 : 16
+                ),
                 decoration: BoxDecoration(
                   color: widget.selected
                       ? const Color(0xFFEFF6FF)
@@ -2310,49 +1985,65 @@ class _SidebarButtonState extends State<_SidebarButton>
                         )
                       : null,
                 ),
-                child: Row(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: widget.selected
-                            ? const Color(0xFF3B82F6)
-                            : const Color(0xFF94A3B8),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        widget.icon,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        widget.label,
-                        style: TextStyle(
-                          color: widget.selected
-                              ? const Color(0xFF1E40AF)
-                              : const Color(0xFF475569),
-                          fontWeight: widget.selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                    if (widget.selected)
-                      Container(
-                        width: 6,
-                        height: 6,
+                child: widget.collapsed
+                    ? AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6),
-                          shape: BoxShape.circle,
+                          color: widget.selected
+                              ? const Color(0xFF3B82F6)
+                              : const Color(0xFF94A3B8),
+                          borderRadius: BorderRadius.circular(8),
                         ),
+                        child: Icon(
+                          widget.icon,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      )
+                    : Row(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: widget.selected
+                                  ? const Color(0xFF3B82F6)
+                                  : const Color(0xFF94A3B8),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              widget.icon,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              widget.label,
+                              style: TextStyle(
+                                color: widget.selected
+                                    ? const Color(0xFF1E40AF)
+                                    : const Color(0xFF475569),
+                                fontWeight: widget.selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          if (widget.selected)
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3B82F6),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
               ),
             ),
           ),
