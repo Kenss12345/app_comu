@@ -15,6 +15,8 @@ class EquiposACargoScreen extends StatefulWidget {
 class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
   List<Map<String, dynamic>> equiposACargo = [];
   bool _cargando = true;
+  bool _operacionEnCurso = false;
+  bool _mostrandoDialogoCarga = false;
 
   //bool solicitando = false;
   bool solicitudRealizada = false;
@@ -93,16 +95,74 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
     }
   }
 
+  void _mostrarDialogoBloqueante(String mensaje) {
+    if (_mostrandoDialogoCarga) return;
+    setState(() {
+      _mostrandoDialogoCarga = true;
+    });
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => WillPopScope(
+        onWillPop: () async => false,
+        child: Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.6),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(mensaje, style: const TextStyle(fontSize: 16)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _cerrarDialogoBloqueante() {
+    if (!_mostrandoDialogoCarga) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    if (mounted) {
+      setState(() {
+        _mostrandoDialogoCarga = false;
+      });
+    } else {
+      _mostrandoDialogoCarga = false;
+    }
+  }
+
   void _eliminarEquipo(int index) async {
     final equipo = equiposACargo[index];
     final equipoId = equipo['id'];
     final user = FirebaseAuth.instance.currentUser;
 
     try {
-      // Transacción para cambiar el estado a "Disponible" en Firestore
+      if (_operacionEnCurso) return;
+      setState(() {
+        _operacionEnCurso = true;
+      });
+      _mostrarDialogoBloqueante("Eliminando equipo...");
+
+      // Transacción: vuelve el equipo a "Disponible" y elimina del subdocumento del usuario de forma atómica
       await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final equipoDocRef =
-            FirebaseFirestore.instance.collection('equipos').doc(equipoId);
+        final equipoDocRef = FirebaseFirestore.instance.collection('equipos').doc(equipoId);
         final snapshot = await transaction.get(equipoDocRef);
 
         if (!snapshot.exists) {
@@ -112,52 +172,63 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
         final data = snapshot.data() as Map<String, dynamic>;
         final estadoActual = data['estado'];
 
-        // Solo permite cambiar si el estado es "Pendiente"
         if (estadoActual != "Pendiente") {
           throw Exception("El equipo no está en estado 'Pendiente'.");
         }
 
-        // Actualiza el estado a "Disponible"
-        transaction.update(equipoDocRef, {
-          'estado': 'Disponible',
+        transaction.update(equipoDocRef, {'estado': 'Disponible'});
+
+        if (user != null) {
+          final userEquipoRef = FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .collection('equipos_a_cargo')
+              .doc(equipoId);
+          transaction.delete(userEquipoRef);
+        }
+      });
+
+      // Si la transacción fue exitosa, limpiamos estado local
+      if (mounted) {
+        setState(() {
+          if (index >= 0 && index < equiposACargo.length && equiposACargo[index]['id'] == equipoId) {
+            equiposACargo.removeAt(index);
+          } else {
+            equiposACargo.removeWhere((e) => e['id'] == equipoId);
+          }
+          // Mantener carrito local en sincronía (si el índice cambió, remover por id no está disponible)
+          if (index >= 0 && index < CarritoEquipos().equipos.length) {
+            CarritoEquipos().eliminarEquipo(index);
+          } else {
+            // Fallback: reconstruir sin el equipoId
+            final lista = List<Map<String, dynamic>>.from(CarritoEquipos().equipos);
+            final nuevo = lista.where((e) => e['id'] != equipoId).toList();
+            CarritoEquipos().equipos
+              ..clear()
+              ..addAll(nuevo);
+          }
         });
-      });
-
-      // Si la transacción fue exitosa, lo eliminamos del carrito local
-      setState(() {
-        CarritoEquipos().eliminarEquipo(index);
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
-      );
-
-      // Elimina del Firestore del usuario
-      if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(user.uid)
-            .collection('equipos_a_cargo')
-            .doc(equipoId)
-            .delete();
       }
 
-      // Elimina de la lista local
-      setState(() {
-        equiposACargo.removeAt(index);
-      });
-
+      _cerrarDialogoBloqueante();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
+        SnackBar(content: Text("${equipo["nombre"]} eliminado y disponible nuevamente.")),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al eliminar: ${e.toString()}")),
-      );
+      _cerrarDialogoBloqueante();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al eliminar: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _operacionEnCurso = false;
+        });
+      } else {
+        _operacionEnCurso = false;
+      }
     }
   }
 
@@ -347,9 +418,18 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                         ),
                         trailing: (!haySolicitudPendiente && !hayEquiposEnUso)
                             ? IconButton(
-                                icon: const Icon(Icons.delete,
-                                    color: Colors.redAccent),
-                                onPressed: () => _eliminarEquipo(index),
+                                icon: _operacionEnCurso
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.delete,
+                                        color: Colors.redAccent),
+                                onPressed:
+                                    _operacionEnCurso ? null : () => _eliminarEquipo(index),
                               )
                             : null,
                       ),

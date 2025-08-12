@@ -14,9 +14,10 @@ class EquiposDisponiblesScreen extends StatefulWidget {
 }
 
 class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
-  User? _usuarioActual;
   int? _puntosUsuario;
   bool _cargandoUsuario = true;
+  bool _operacionEnCurso = false;
+  bool _mostrandoDialogoCarga = false;
 
   final TextEditingController _searchController = TextEditingController();
   String searchQuery = "";
@@ -65,7 +66,6 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       final data = snapshot.data();
       if (mounted) {
       setState(() {
-        _usuarioActual = user;
         _puntosUsuario = data?['puntos'] ?? 0;
         _cargandoUsuario = false;
       });
@@ -124,10 +124,75 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     }
   }
 
+  void _mostrarDialogoBloqueante(String mensaje) {
+    if (_mostrandoDialogoCarga) return;
+    setState(() {
+      _mostrandoDialogoCarga = true;
+    });
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.6),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(mensaje, style: const TextStyle(fontSize: 16)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _cerrarDialogoBloqueante() {
+    if (!_mostrandoDialogoCarga) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    if (mounted) {
+      setState(() {
+        _mostrandoDialogoCarga = false;
+      });
+    } else {
+      _mostrandoDialogoCarga = false;
+    }
+  }
+
   void _anadirAEquiposACargo(Map<String, dynamic> equipo) async {
     final equipoId = equipo['id'];
 
     try {
+      if (_operacionEnCurso) return;
+      setState(() {
+        _operacionEnCurso = true;
+      });
+      _mostrarDialogoBloqueante("Añadiendo equipo...");
+
       // Inicia una transacción
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         // Obtén el documento del equipo dentro de la transacción
@@ -173,7 +238,10 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
             .set(equipoConFechas);
       }
 
-      Navigator.pop(context);
+      _cerrarDialogoBloqueante();
+      if (mounted) {
+        Navigator.pop(context);
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -181,9 +249,18 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       );
     } catch (e) {
       // Si ocurre un error (por ejemplo, equipo ya en uso)
+      _cerrarDialogoBloqueante();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: ${e.toString()}")),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _operacionEnCurso = false;
+        });
+      } else {
+        _operacionEnCurso = false;
+      }
     }
     if (mounted) {
     _loadEquiposDesdeFirestore();
@@ -274,9 +351,22 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: () => _anadirAEquiposACargo(equipo),
-                              icon: const Icon(Icons.add),
-                              label: const Text("Añadir equipo"),
+                              onPressed: _operacionEnCurso
+                                  ? null
+                                  : () => _anadirAEquiposACargo(equipo),
+                              icon: _operacionEnCurso
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                            Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(Icons.add),
+                              label: Text(
+                                  _operacionEnCurso ? "Procesando…" : "Añadir equipo"),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.orange.shade600,
                                 padding:
