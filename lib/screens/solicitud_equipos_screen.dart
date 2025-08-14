@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:app_comu/utils/carrito_equipos.dart';
@@ -21,6 +22,7 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
 
   // Datos del usuario
   String nombreUsuario = "";
+  String apellidosUsuario = "";
   String dniUsuario = "";
   String tipoUsuario = "";
   String celularUsuario = "";
@@ -32,20 +34,187 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   bool _enviando = false;
 
   // Controladores para los campos editables
-  final TextEditingController asignaturaController = TextEditingController();
+  String? asignaturaSeleccionada;
+  final List<String> _opcionesAsignatura = const [
+    'AUDIOVISUAL',
+    'FOTOGRAFÍA',
+    'RADIO',
+    'OTROS',
+  ];
+  final TextEditingController cursoController = TextEditingController();
   final TextEditingController trabajoController = TextEditingController();
   final TextEditingController docenteController = TextEditingController();
   final TextEditingController lugarController = TextEditingController();
-  //final TextEditingController fechaEntregaController = TextEditingController();
-  //final TextEditingController fechaDevolucionController = TextEditingController();
-  final TextEditingController horaSalidaController = TextEditingController();
+  final TextEditingController nombreGrupoController = TextEditingController();
+  final TextEditingController semestreController = TextEditingController();
+  final TextEditingController nrcController = TextEditingController();
+  int? cantidadIntegrantesSeleccionada;
+  bool _unicoIntegrante = true;
+  final List<TextEditingController> _integrantesControllers = [];
+  final List<FocusNode> _integrantesFocusNodes = [];
+  final List<List<Map<String, dynamic>>> _sugerenciasIntegrantes = [];
+  final List<Timer?> _debounceIntegrantes = [];
 
   @override
   void initState() {
     super.initState();
     trabajoSeleccionado = trabajos.first['nombre'] as String;
+    asignaturaSeleccionada = _opcionesAsignatura.first;
+    cantidadIntegrantesSeleccionada = 1;
+    _unicoIntegrante = true;
     _cargarDatosUsuario();
     _ajustarFechasPorTrabajo(trabajoSeleccionado!);
+    // Asegura que el valor inicial del desplegable quede persistido
+    trabajoController.text = trabajoSeleccionado ?? "";
+    _rebuildIntegrantes(0);
+  }
+
+  @override
+  void dispose() {
+    for (final c in _integrantesControllers) {
+      c.dispose();
+    }
+    for (final f in _integrantesFocusNodes) {
+      f.dispose();
+    }
+    for (final t in _debounceIntegrantes) {
+      t?.cancel();
+    }
+    cursoController.dispose();
+    trabajoController.dispose();
+    docenteController.dispose();
+    lugarController.dispose();
+    nombreGrupoController.dispose();
+    semestreController.dispose();
+    nrcController.dispose();
+    super.dispose();
+  }
+
+  void _rebuildIntegrantes(int cantidad) {
+    // Ajusta longitud de listas auxiliares
+    while (_integrantesControllers.length < cantidad) {
+      _integrantesControllers.add(TextEditingController());
+      _integrantesFocusNodes.add(FocusNode());
+      _sugerenciasIntegrantes.add(<Map<String, dynamic>>[]);
+      _debounceIntegrantes.add(null);
+    }
+    while (_integrantesControllers.length > cantidad) {
+      _integrantesControllers.removeLast().dispose();
+      _integrantesFocusNodes.removeLast().dispose();
+      _sugerenciasIntegrantes.removeLast();
+      final lastTimer = _debounceIntegrantes.removeLast();
+      lastTimer?.cancel();
+    }
+    // Limpia textos excedentes si fue reducción
+    for (int i = 0; i < _integrantesControllers.length; i++) {
+      // Mantener textos actuales
+    }
+    setState(() {});
+  }
+
+  Future<void> _fetchSugerenciasIntegrantes(int index, String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _sugerenciasIntegrantes[index] = [];
+      });
+      return;
+    }
+    try {
+      // Buscar por DNI (prefijo) únicamente
+      final qDni = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .orderBy('dni')
+          .startAt([query])
+          .endAt([query + '\\uf8ff'])
+          .limit(5)
+          .get();
+      final resultados = <Map<String, dynamic>>[];
+      for (final d in qDni.docs) {
+        final data = d.data();
+        resultados.add({'dni': (data['dni'] ?? '').toString()});
+      }
+      if (mounted) {
+        setState(() {
+          _sugerenciasIntegrantes[index] = resultados;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _sugerenciasIntegrantes[index] = [];
+        });
+      }
+    }
+  }
+
+  List<Widget> _buildCamposIntegrantes() {
+    if (_unicoIntegrante) return <Widget>[];
+    final totalAdicionales = (cantidadIntegrantesSeleccionada ?? 1) - 1;
+    final widgets = <Widget>[];
+    for (int i = 0; i < totalAdicionales; i++) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _integrantesControllers[i],
+                focusNode: _integrantesFocusNodes[i],
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Integrante ${i + 2} (DNI)',
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (text) {
+                  _debounceIntegrantes[i]?.cancel();
+                  _debounceIntegrantes[i] = Timer(const Duration(milliseconds: 250), () {
+                    _fetchSugerenciasIntegrantes(i, text);
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Completa este integrante';
+                  }
+                  return null;
+                },
+              ),
+              if (_sugerenciasIntegrantes[i].isNotEmpty && _integrantesFocusNodes[i].hasFocus)
+                Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                    ],
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _sugerenciasIntegrantes[i].length,
+                    itemBuilder: (context, j) {
+                      final sug = _sugerenciasIntegrantes[i][j];
+                      final dniSugerido = (sug['dni'] ?? '').toString();
+                      return ListTile(
+                        dense: true,
+                        title: Text('DNI: $dniSugerido'),
+                        onTap: () {
+                          setState(() {
+                            _integrantesControllers[i].text = dniSugerido;
+                            _sugerenciasIntegrantes[i] = [];
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    return widgets;
   }
 
   void _ajustarFechasPorTrabajo(String? trabajoNombre) {
@@ -71,6 +240,7 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
       if (userDoc.exists) {
         setState(() {
           nombreUsuario = userDoc["nombre"] ?? "";
+          apellidosUsuario = userDoc["apellidos"] ?? "";
           celularUsuario = userDoc["celular"] ?? "";
           emailUsuario = userDoc["email"] ?? "";
           dniUsuario = userDoc["dni"] ?? "";
@@ -100,6 +270,41 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
       if (user != null) {
         final equipos = CarritoEquipos().equipos;
 
+        // Reunir DNIs de integrantes solo si NO es único integrante
+        final List<String> integrantes = _unicoIntegrante
+            ? <String>[]
+            : _integrantesControllers
+                .map((c) => c.text.trim())
+                .where((t) => t.isNotEmpty)
+                .toList();
+
+        // Validación: todos los DNIs deben existir en 'usuarios'
+        if (integrantes.isNotEmpty) {
+          // whereIn permite hasta 10 elementos
+          final snapshot = await FirebaseFirestore.instance
+              .collection('usuarios')
+              .where('dni', whereIn: integrantes)
+              .get();
+          final encontrados = snapshot.docs
+              .map((d) => (d.data()['dni'] ?? '').toString())
+              .toSet();
+          final faltantes = integrantes.where((dni) => !encontrados.contains(dni)).toList();
+          if (faltantes.isNotEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    "Los siguientes DNI no están registrados: ${faltantes.join(', ')}",
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            setState(() => _enviando = false);
+            return;
+          }
+        }
+
         // Convierte la fecha a DateTime y luego a Timestamp
         Timestamp fechaDevolucionTS;
         try {
@@ -110,18 +315,26 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           fechaDevolucionTS = Timestamp.now();
         }
 
+        // Nota: 'integrantes' ya fue construido/validado arriba
+
         await FirebaseFirestore.instance.collection('solicitudes').add({
           'uid': user.uid,
           'nombre': nombreUsuario,
+          'apellidos': apellidosUsuario,
           'email': emailUsuario,
           'dni': dniUsuario,
           'celular': celularUsuario,
           'tipoUsuario': tipoUsuario,
-          'asignatura': asignaturaController.text,
-          'trabajo': trabajoController.text,
+          'asignatura': asignaturaSeleccionada,
+          'curso': cursoController.text,
+          'trabajo': trabajoSeleccionado ?? trabajoController.text,
           'docente': docenteController.text,
           'lugar': lugarController.text,
-          'hora_salida': horaSalidaController.text,
+          'nombre_grupo': nombreGrupoController.text,
+          'semestre': semestreController.text,
+          'nrc': nrcController.text,
+          'cantidad_integrantes': cantidadIntegrantesSeleccionada,
+          'integrantes': integrantes,
           'fecha_prestamo': fechaPrestamo,
           'fecha_devolucion': fechaDevolucionTS,
           'fecha_envio': Timestamp.now(),
@@ -142,7 +355,7 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
         }
 
         // Enviar correo al usuario
-        await _enviarCorreoConfirmacion(emailUsuario, equipos);
+        await _enviarCorreoConfirmacion(emailUsuario, equipos, integrantes);
 
         // Solo muestra el mensaje de éxito cuando todo termina
         if (mounted) {
@@ -164,7 +377,7 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
   }
 
   Future<void> _enviarCorreoConfirmacion(
-      String destinatario, List<Map<String, dynamic>> equipos) async {
+      String destinatario, List<Map<String, dynamic>> equipos, List<String> integrantes) async {
     // Usa tu correo institucional o de servicio habilitado para SMTP
     String username = 'kenss12345@gmail.com';
     String password = 'qsex cejw glnq namr';
@@ -175,6 +388,13 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     String contenidoEquipos = equipos
         .map((e) => "- ${e['nombre']} (${e['estado_prestamo']})")
         .join("\n");
+
+    // Construye integrantes
+    String contenidoIntegrantes = integrantes.isEmpty
+        ? 'No especificado'
+        : integrantes.asMap().entries
+            .map((e) => "${e.key + 1}. ${e.value}")
+            .join("\n");
 
     // Construye el contenido del mensaje
     final message = Message()
@@ -189,11 +409,16 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
     Detalles de tu solicitud:
     - Fecha de entrega: $fechaPrestamo
     - Fecha de devolución: $fechaDevolucion
-    - Hora de salida: ${horaSalidaController.text}
+    - Asignatura: ${asignaturaSeleccionada ?? ''}
+    - Curso: ${cursoController.text}
+    - Docente: ${docenteController.text}
+    - Nombre de grupo: ${nombreGrupoController.text}
+    - Semestre: ${semestreController.text}
+    - NRC: ${nrcController.text}
+    - Cantidad de integrantes: ${cantidadIntegrantesSeleccionada ?? 0}
+    - Integrantes:\n$contenidoIntegrantes
     - Lugar de Trabajo: ${lugarController.text}
-    - Asignatura: ${asignaturaController.text}
     - Trabajo a Realizar: ${trabajoController.text}
-    - Docente a Cargo: ${docenteController.text}
 
   Equipos solicitados:
   $contenidoEquipos
@@ -262,6 +487,10 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
                                     initialValue: nombreUsuario,
                                     enabled: false),
                                 _buildTextField(
+                                    label: "Apellidos",
+                                    initialValue: apellidosUsuario,
+                                    enabled: false),
+                                _buildTextField(
                                     label: "DNI",
                                     initialValue: dniUsuario,
                                     enabled: false),
@@ -283,9 +512,36 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
                             _buildSectionCard(
                               title: "Detalles de la Solicitud",
                               children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: DropdownButtonFormField<String>(
+                                    value: asignaturaSeleccionada,
+                                    decoration: const InputDecoration(
+                                      labelText: "Asignatura",
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: _opcionesAsignatura
+                                        .map((asig) => DropdownMenuItem(
+                                              value: asig,
+                                              child: Text(asig),
+                                            ))
+                                        .toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        asignaturaSeleccionada = value;
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Selecciona una asignatura";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
                                 _buildTextField(
-                                    label: "Asignatura",
-                                    controller: asignaturaController),
+                                    label: "Curso",
+                                    controller: cursoController),
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: DropdownButtonFormField<String>(
@@ -316,11 +572,63 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
                                   ),
                                 ),
                                 _buildTextField(
-                                    label: "Docente a Cargo",
+                                    label: "Docente",
                                     controller: docenteController),
+                                _buildTextField(
+                                    label: "Nombre de grupo",
+                                    controller: nombreGrupoController),
+                                _buildTextField(
+                                    label: "Semestre",
+                                    controller: semestreController),
+                                _buildTextField(
+                                    label: "NRC",
+                                    controller: nrcController),
                                 _buildTextField(
                                     label: "Lugar de Trabajo",
                                     controller: lugarController),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: DropdownButtonFormField<String>(
+                                    value: _unicoIntegrante
+                                        ? 'unico'
+                                        : (cantidadIntegrantesSeleccionada?.toString() ?? 'unico'),
+                                    decoration: const InputDecoration(
+                                      labelText: "Cantidad de integrantes del grupo",
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: <DropdownMenuItem<String>>[
+                                      const DropdownMenuItem(
+                                        value: 'unico',
+                                        child: Text('Único integrante'),
+                                      ),
+                                      ...List.generate(9, (i) => i + 2).map((n) => DropdownMenuItem<String>(
+                                            value: n.toString(),
+                                            child: Text(n.toString()),
+                                          )),
+                                    ],
+                                    onChanged: (value) {
+                                      setState(() {
+                                        if (value == 'unico') {
+                                          _unicoIntegrante = true;
+                                          cantidadIntegrantesSeleccionada = 1;
+                                          _rebuildIntegrantes(0);
+                                        } else {
+                                          _unicoIntegrante = false;
+                                          final parsed = int.tryParse(value ?? '2') ?? 2;
+                                          cantidadIntegrantesSeleccionada = parsed;
+                                          _rebuildIntegrantes(parsed - 1);
+                                        }
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Selecciona la cantidad de integrantes";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                ..._buildCamposIntegrantes(),
                                 Padding(
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 8.0),
@@ -336,26 +644,7 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
                                     ],
                                   ),
                                 ),
-                                _buildTextField(
-                                  label: "Hora de Salida del Equipo",
-                                  controller: horaSalidaController,
-                                  enabled: true,
-                                  onTap: () async {
-                                    final timeOfDay = await showTimePicker(
-                                      context: context,
-                                      initialTime: TimeOfDay.now(),
-                                    );
-
-                                    if (timeOfDay != null) {
-                                      final formattedTime =
-                                          timeOfDay.format(context);
-                                      setState(() {
-                                        horaSalidaController.text =
-                                            formattedTime;
-                                      });
-                                    }
-                                  },
-                                )
+                                
                               ],
                             ),
                             const SizedBox(height: 12),

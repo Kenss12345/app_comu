@@ -30,22 +30,47 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
 
   bool _subiendoImagenes = false;
 
-  Future<List<String>> _subirImagenes(String nombreEquipo, List<XFile?> imagenes) async {
+  // Sanitiza un ID de documento (no permite / . # [ ]) y recorta
+  String _sanitizeDocId(String input) {
+    final trimmed = input.trim();
+    // Reemplaza caracteres no válidos para IDs de documento
+    final replaced = trimmed.replaceAll(RegExp(r"[\./#\[\]]"), '-');
+    // Normaliza espacios múltiples
+    return replaced.replaceAll(RegExp(r"\s+"), ' ');
+  }
+
+  // Sanitiza un segmento de ruta de Storage
+  String _sanitizePathSegment(String input) {
+    final s = input.trim();
+    return s.replaceAll(RegExp(r"[\s/\\]"), '_');
+  }
+
+  Future<List<String>> _subirImagenes({
+    required String carpetaDestino,
+    required String nombreEquipo,
+    required List<XFile?> imagenesSeleccionadas,
+    required List<String> imagenesExistentes,
+  }) async {
     final storage = FirebaseStorage.instance;
-    List<String> urls = [];
-    for (int i = 0; i < imagenes.length; i++) {
-      final img = imagenes[i];
+    final List<String> urls = List<String>.from(imagenesExistentes);
+    // Asegurar longitud 3
+    while (urls.length < 3) {
+      urls.add('');
+    }
+    for (int i = 0; i < 3; i++) {
+      final img = i < imagenesSeleccionadas.length ? imagenesSeleccionadas[i] : null;
       if (img != null) {
-        final ref = storage.ref().child('Equipos/equipos/$nombreEquipo-$i.png');
+        final ref = storage.ref().child('Equipos/$carpetaDestino/${nombreEquipo.trim()}-$i.png');
         UploadTask uploadTask = kIsWeb
             ? ref.putData(await img.readAsBytes(), SettableMetadata(contentType: 'image/png'))
             : ref.putFile(File(img.path), SettableMetadata(contentType: 'image/png'));
         final snapshot = await uploadTask.whenComplete(() {});
         final url = await snapshot.ref.getDownloadURL();
-        urls.add(url);
+        urls[i] = url;
       }
     }
-    return urls;
+    // Garantizar exactamente 3
+    return urls.take(3).toList();
   }
 
   void _mostrarDialogoEquipo({Map<String, dynamic>? equipo, String? docId}) {
@@ -56,11 +81,11 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
     final marcaController = TextEditingController(text: equipo?['marca'] ?? '');
     final modeloController = TextEditingController(text: equipo?['modelo'] ?? '');
     final numeroController = TextEditingController(text: equipo?['numero'] ?? '');
-    String categoria = (equipo?['categoria'] ?? '').toString().toLowerCase().trim();
-    String condicion = (equipo?['condicion'] ?? '').toString().toLowerCase().trim();
-    String estado = (equipo?['estado'] ?? '').toString().toLowerCase().trim();
+    String categoria = (equipo?['categoria'] ?? '').toString().trim();
+    String condicion = (equipo?['condicion'] ?? '').toString().trim();
+    String estado = (equipo?['estado'] ?? '').toString().trim();
     String tipoEquipo = (equipo?['tipoEquipo'] ?? '').toString().toLowerCase().trim();
-    List<XFile?> imagenes = [null, null, null];
+    // Selección temporal de imágenes (ya manejada en _imagenes)
     List<String> imagenesExistentes = equipo?['imagenes'] != null ? List<String>.from(equipo!['imagenes']) : [];
     setState(() {
       _imagenes = [null, null, null];
@@ -72,8 +97,14 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            return Dialog(
+            return WillPopScope(
+              onWillPop: () async => !_subiendoImagenes,
+              child: Dialog(
               backgroundColor: Colors.transparent,
+                child: Stack(
+                  children: [
+                    AbsorbPointer(
+                      absorbing: _subiendoImagenes,
               child: Container(
                 width: MediaQuery.of(context).size.width > 600 ? 480 : MediaQuery.of(context).size.width * 0.95,
                 padding: const EdgeInsets.all(32),
@@ -125,10 +156,10 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                         DropdownButtonFormField<String>(
                           value: categoria.isNotEmpty ? categoria : null,
                           decoration: _dropdownDecoration('Categoría', Icons.category),
-                          items: ['video', 'luz', 'audio', 'accesorios', 'soporte']
+                          items: ['Video', 'Luz', 'Audio', 'Accesorios', 'Soporte', 'Otros']
                               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                               .toList(),
-                          onChanged: (v) => categoria = v ?? '',
+                          onChanged: (v) => categoria = (v ?? ''),
                           validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 16),
@@ -137,10 +168,10 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                         DropdownButtonFormField<String>(
                           value: condicion.isNotEmpty ? condicion : null,
                           decoration: _dropdownDecoration('Condición', Icons.check_circle),
-                          items: ['nuevo', 'bueno', 'regular', 'defectuoso']
+                          items: ['Nuevo', 'Bueno', 'Regular', 'Defectuoso']
                               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                               .toList(),
-                          onChanged: (v) => condicion = v ?? '',
+                          onChanged: (v) => condicion = (v ?? ''),
                           validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 16),
@@ -149,10 +180,10 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                         DropdownButtonFormField<String>(
                           value: estado.isNotEmpty ? estado : null,
                           decoration: _dropdownDecoration('Estado', Icons.info),
-                          items: ['pendiente', 'disponible', 'en uso', 'mantenimiento']
+                          items: ['Pendiente', 'Disponible', 'En uso', 'Mantenimiento']
                               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                               .toList(),
-                          onChanged: (v) => estado = v ?? '',
+                          onChanged: (v) => estado = (v ?? ''),
                           validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 16),
@@ -202,9 +233,31 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                               ),
                               icon: const Icon(Icons.save),
                               label: Text(docId == null ? 'Registrar' : 'Guardar'),
-                              onPressed: () async {
+                              onPressed: _subiendoImagenes
+                                  ? null
+                                  : () async {
                                 if (!formKey.currentState!.validate()) return;
-                                try {
+                                      if (nombreController.text.trim().isEmpty) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('El nombre del equipo es requerido')),
+                                        );
+                                        return;
+                                      }
+                                      try {
+                                        setStateDialog(() {
+                                          _subiendoImagenes = true;
+                                        });
+                                        // Determinar carpeta destino (normalizado)
+                                        final carpeta = (categoria.toLowerCase() == 'accesorios') ? 'accesorios' : 'equipos';
+                                        final safeNameForPath = _sanitizePathSegment(nombreController.text);
+                                        // Subir imágenes seleccionadas (respetar existentes cuando no hay nuevas)
+                                        final urls = await _subirImagenes(
+                                          carpetaDestino: carpeta,
+                                          nombreEquipo: safeNameForPath,
+                                          imagenesSeleccionadas: _imagenes,
+                                          imagenesExistentes: imagenesExistentes,
+                                        );
+
                                   final data = {
                                     'nombre': nombreController.text.trim(),
                                     'categoria': categoria,
@@ -212,14 +265,27 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                     'condicion': condicion,
                                     'descripcion': descripcionController.text.trim(),
                                     'estado': estado,
-                                    'imagenes': imagenesExistentes,
+                                          'imagenes': urls,
                                     'marca': marcaController.text.trim(),
                                     'modelo': modeloController.text.trim(),
                                     'numero': numeroController.text.trim(),
                                     'tipoEquipo': tipoEquipo,
                                   };
                                   if (docId == null) {
-                                    await FirebaseFirestore.instance.collection('equipos').add(data);
+                                          // Crear con ID = nombre (validado y único)
+                                          final desiredId = _sanitizeDocId(nombreController.text);
+                                          if (desiredId.isEmpty) {
+                                            throw Exception('El nombre no es válido para ID de documento.');
+                                          }
+                                          final equiposCol = FirebaseFirestore.instance.collection('equipos');
+                                          await FirebaseFirestore.instance.runTransaction((tx) async {
+                                            final docRef = equiposCol.doc(desiredId);
+                                            final snap = await tx.get(docRef);
+                                            if (snap.exists) {
+                                              throw Exception('Ya existe un equipo con ese nombre.');
+                                            }
+                                            tx.set(docRef, data);
+                                          });
                                   } else {
                                     await FirebaseFirestore.instance.collection('equipos').doc(docId).update(data);
                                   }
@@ -232,6 +298,10 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('Error al guardar: $e')),
                                   );
+                                      } finally {
+                                        setStateDialog(() {
+                                          _subiendoImagenes = false;
+                                        });
                                 }
                               },
                             ),
@@ -240,6 +310,19 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
+                if (_subiendoImagenes)
+                      Positioned.fill(
+                        child: Container(
+                          color: Colors.black26,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             );
@@ -303,14 +386,17 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
       onTap: () async {
         final picker = ImagePicker();
         final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
-        if (picked != null && picked.path.endsWith('.png')) {
+        if (picked != null) {
+          final filename = kIsWeb ? (picked.name) : picked.path;
+          if (!filename.toLowerCase().endsWith('.png')) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Solo se permiten imágenes PNG (.png).')),
+            );
+            return;
+          }
           setStateDialog(() {
             _imagenes[index] = picked;
           });
-        } else if (picked != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Solo se permiten imágenes PNG.')),
-          );
         }
       },
       child: Container(
@@ -360,6 +446,45 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
     );
     if (confirm == true) {
       try {
+        final docRef = FirebaseFirestore.instance.collection('equipos').doc(docId);
+        final snap = await docRef.get();
+        if (snap.exists) {
+          final data = snap.data() as Map<String, dynamic>;
+          final String nombre = (data['nombre'] ?? '').toString();
+
+          // Eliminar por URLs si existen
+          final List<dynamic> imgs = (data['imagenes'] ?? []) as List<dynamic>;
+          for (final u in imgs) {
+            final url = (u ?? '').toString();
+            if (url.isNotEmpty) {
+              try {
+                final ref = FirebaseStorage.instance.refFromURL(url);
+                await ref.delete();
+              } catch (_) {
+                // Puede fallar si ya no existe; continuamos
+              }
+            }
+          }
+
+          // Además, intentar borrar por búsqueda global en Equipos/{accesorios|equipos} con prefijo nombre-sanitizado-
+          final storage = FirebaseStorage.instance;
+          final base = _sanitizePathSegment(nombre);
+          for (final folder in ['accesorios', 'equipos']) {
+            try {
+              final dirRef = storage.ref().child('Equipos/$folder');
+              final list = await dirRef.listAll();
+              for (final item in list.items) {
+                final n = item.name.toLowerCase();
+                if (n.startsWith(base.toLowerCase() + '-') && n.endsWith('.png')) {
+                  try {
+                    await item.delete();
+                  } catch (_) {}
+                }
+              }
+            } catch (_) {}
+          }
+        }
+
         await FirebaseFirestore.instance.collection('equipos').doc(docId).delete();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Equipo eliminado')),
@@ -484,10 +609,10 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                               ),
                               items: [
                                 const DropdownMenuItem(value: '', child: Text('Todas')),
-                                const DropdownMenuItem(value: 'nuevo', child: Text('Nuevo')),
-                                const DropdownMenuItem(value: 'bueno', child: Text('Bueno')),
-                                const DropdownMenuItem(value: 'regular', child: Text('Regular')),
-                                const DropdownMenuItem(value: 'defectuoso', child: Text('Defectuoso')),
+                                const DropdownMenuItem(value: 'Nuevo', child: Text('Nuevo')),
+                                const DropdownMenuItem(value: 'Bueno', child: Text('Bueno')),
+                                const DropdownMenuItem(value: 'Regular', child: Text('Regular')),
+                                const DropdownMenuItem(value: 'Defectuoso', child: Text('Defectuoso')),
                               ],
                               onChanged: (value) {
                                 setState(() {
@@ -521,10 +646,10 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                               ),
                               items: [
                                 const DropdownMenuItem(value: '', child: Text('Todos')),
-                                const DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
-                                const DropdownMenuItem(value: 'disponible', child: Text('Disponible')),
-                                const DropdownMenuItem(value: 'en uso', child: Text('En uso')),
-                                const DropdownMenuItem(value: 'mantenimiento', child: Text('Mantenimiento')),
+                                const DropdownMenuItem(value: 'Pendiente', child: Text('Pendiente')),
+                                const DropdownMenuItem(value: 'Disponible', child: Text('Disponible')),
+                                const DropdownMenuItem(value: 'En uso', child: Text('En uso')),
+                                const DropdownMenuItem(value: 'Mantenimiento', child: Text('Mantenimiento')),
                               ],
                               onChanged: (value) {
                                 setState(() {
@@ -678,7 +803,7 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                         }
                         final docs = snapshot.data?.docs ?? [];
                         List<Map<String, dynamic>> equipos = docs
-                            .map((e) => {...?e.data() as Map<String, dynamic>, '_id': e.id})
+                            .map((e) => {...(e.data() as Map<String, dynamic>), '_id': e.id})
                             .toList();
                         
                         // Aplicar filtros

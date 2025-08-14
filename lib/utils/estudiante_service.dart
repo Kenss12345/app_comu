@@ -10,6 +10,7 @@ class EstudianteService {
   /// El gestor mantiene su sesión activa
   static Future<Map<String, dynamic>> crearEstudiante({
     required String nombre,
+    required String apellidos,
     required String dni,
     required String email,
     required String celular,
@@ -27,6 +28,7 @@ class EstudianteService {
       // Preparar los datos para la Cloud Function
       final Map<String, dynamic> data = {
         'nombre': nombre,
+        'apellidos': apellidos,
         'dni': dni,
         'email': email,
         'celular': celular,

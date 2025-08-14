@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'package:http/http.dart' as http;
+// import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/estudiante_service.dart';
 
 class GestionEstudiantesScreen extends StatefulWidget {
@@ -16,6 +19,54 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
   int _page = 0;
   String _filtroTipoUsuario = '';
   String _filtroPuntos = '';
+  // bool _registroVerPassword = false; // Eliminado: ya no se usa campo contraseña en formularios
+
+  // Configuración EmailJS (rellenar con tus valores)
+  static const String _emailJsServiceId = 'service_g9z5wq1';
+  static const String _emailJsTemplateId = 'template_9eb5dkr';
+  static const String _emailJsPublicKey = '1YM2-UMljnkfRuBmm';
+
+  String _generarPasswordAleatoria({int length = 10}) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#%*?';
+    final rand = Random.secure();
+    return List.generate(length, (_) => chars[rand.nextInt(chars.length)]).join();
+  }
+
+  Future<void> _enviarEmailCreacionCuenta({
+    required String toEmail,
+    required String nombre,
+    required String apellidos,
+    required String dni,
+    required String celular,
+    required String password,
+    required int puntos,
+  }) async {
+    final uri = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
+    final payload = {
+      'service_id': _emailJsServiceId,
+      'template_id': _emailJsTemplateId,
+      'user_id': _emailJsPublicKey,
+      'template_params': {
+        'to_email': toEmail,
+        'to_name': '$nombre $apellidos',
+        'nombre': nombre,
+        'apellidos': apellidos,
+        'dni': dni,
+        'celular': celular,
+        'password': password,
+        'puntos': puntos.toString(),
+      },
+    };
+
+    final resp = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception('EmailJS error ${resp.statusCode}: ${resp.body}');
+    }
+  }
 
   // Función para determinar el tipo de usuario basado en los puntos
   String _getTipoUsuario(int puntos) {
@@ -69,15 +120,16 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
 
   void _mostrarDialogoRegistro(BuildContext context) {
     final nombreController = TextEditingController();
+    final apellidosController = TextEditingController();
     final dniController = TextEditingController();
     final emailController = TextEditingController();
     final celularController = TextEditingController();
-    final passwordController = TextEditingController();
     final puntosController = TextEditingController(text: '10');
     final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -131,7 +183,9 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        _inputField(nombreController, 'Nombre', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
+                        _inputField(nombreController, 'Nombre/s', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
+                        const SizedBox(height: 16),
+                        _inputField(apellidosController, 'Apellidos', Icons.person_outline, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
                         _inputField(dniController, 'DNI', Icons.credit_card, tipo: TextInputType.number, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
@@ -139,8 +193,7 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                         const SizedBox(height: 16),
                         _inputField(celularController, 'Celular', Icons.phone, tipo: TextInputType.phone, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
-                        _inputField(passwordController, 'Contraseña', Icons.lock, tipo: TextInputType.visiblePassword, isPassword: true, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
-                        const SizedBox(height: 16),
+                        // Se elimina el campo de contraseña: se generará automáticamente
                         _inputField(puntosController, 'Puntos', Icons.stars, tipo: TextInputType.number, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 32),
                         Row(
@@ -173,8 +226,11 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                 showDialog(
                                   context: context,
                                   barrierDismissible: false,
-                                  builder: (context) => const Center(
-                                    child: CircularProgressIndicator(),
+                                  builder: (context) => WillPopScope(
+                                    onWillPop: () async => false,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
                                   ),
                                 );
 
@@ -190,12 +246,14 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                   }
 
                                   // Crear estudiante usando Cloud Function
+                                  final passwordAleatoria = _generarPasswordAleatoria();
                                   final resultado = await EstudianteService.crearEstudiante(
                                     nombre: nombreController.text.trim(),
+                                    apellidos: apellidosController.text.trim(),
                                     dni: dniController.text.trim(),
                                     email: emailController.text.trim(),
                                     celular: celularController.text.trim(),
-                                    password: passwordController.text.trim(),
+                                    password: passwordAleatoria,
                                   );
 
                                   Navigator.of(context).pop(); // Cerrar loading
@@ -206,7 +264,27 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                       final puntos = int.tryParse(puntosController.text.trim()) ?? 10;
                                       await FirebaseFirestore.instance.collection('usuarios').doc(resultado['uid']).update({
                                         'puntos': puntos,
+                                        'apellidos': apellidosController.text.trim(),
+                                        'password': passwordAleatoria,
                                       });
+
+                                      // Enviar correo de creación de cuenta mediante EmailJS
+                                      try {
+                                        await _enviarEmailCreacionCuenta(
+                                          toEmail: emailController.text.trim(),
+                                          nombre: nombreController.text.trim(),
+                                          apellidos: apellidosController.text.trim(),
+                                          dni: dniController.text.trim(),
+                                          celular: celularController.text.trim(),
+                                          password: passwordAleatoria,
+                                          puntos: puntos,
+                                        );
+                                      } catch (e) {
+                                        // Si falla el envío de email, informamos pero mantenemos el alta exitosa
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Estudiante creado, pero falló el envío de correo: $e')),
+                                        );
+                                      }
                                     }
                                     
                                     Navigator.of(context).pop(); // Cerrar diálogo de registro
@@ -225,8 +303,8 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                       ),
                                     );
                                   }
-                                } catch (e) {
-                                  Navigator.of(context).pop(); // Cerrar loading
+                                  } catch (e) {
+                                  	Navigator.of(context).pop(); // Cerrar loading
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Error: ${e.toString()}'),
@@ -252,15 +330,17 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
 
   void _mostrarDialogoEditar(BuildContext context, Map<String, dynamic> estudiante, String docId) {
     final nombreController = TextEditingController(text: estudiante['nombre'] ?? '');
+    final apellidosController = TextEditingController(text: estudiante['apellidos'] ?? '');
     final dniController = TextEditingController(text: estudiante['dni'] ?? '');
     final emailController = TextEditingController(text: estudiante['email'] ?? '');
     final celularController = TextEditingController(text: estudiante['celular'] ?? '');
-    final passwordController = TextEditingController(text: estudiante['password'] ?? '');
+    // Sin contraseña en edición: ya no es necesaria
     final puntosController = TextEditingController(text: (estudiante['puntos'] ?? 0).toString());
     final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -314,15 +394,15 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        _inputField(nombreController, 'Nombre', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
+                        _inputField(nombreController, 'Nombre/s', Icons.person, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
+                        const SizedBox(height: 16),
+                        _inputField(apellidosController, 'Apellidos', Icons.person_outline, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
                         _inputField(dniController, 'DNI', Icons.credit_card, tipo: TextInputType.number, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
                         _inputField(emailController, 'Email', Icons.email, tipo: TextInputType.emailAddress, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
                         _inputField(celularController, 'Celular', Icons.phone, tipo: TextInputType.phone, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
-                        const SizedBox(height: 16),
-                        _inputField(passwordController, 'Contraseña', Icons.lock, tipo: TextInputType.visiblePassword, isPassword: true, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
                         _inputField(puntosController, 'Puntos', Icons.stars, tipo: TextInputType.number, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 32),
@@ -351,15 +431,27 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                               label: const Text('Guardar'),
                               onPressed: () async {
                                 if (!formKey.currentState!.validate()) return;
+                                // Mostrar indicador de carga no cancelable
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => WillPopScope(
+                                    onWillPop: () async => false,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                );
                                 await FirebaseFirestore.instance.collection('usuarios').doc(docId).update({
                                   'nombre': nombreController.text.trim(),
+                                  'apellidos': apellidosController.text.trim(),
                                   'dni': dniController.text.trim(),
                                   'email': emailController.text.trim(),
                                   'celular': celularController.text.trim(),
-                                  'password': passwordController.text.trim(),
                                   'puntos': int.tryParse(puntosController.text.trim()) ?? 0, // Mantener los puntos existentes
                                 });
-                                Navigator.of(context).pop();
+                                Navigator.of(context).pop(); // cerrar loading
+                                Navigator.of(context).pop(); // cerrar dialogo editar
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text("Estudiante actualizado")),
                                 );
@@ -408,11 +500,22 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
     }
   }
 
-  Widget _inputField(TextEditingController controller, String label, IconData icon, {TextInputType tipo = TextInputType.text, bool isPassword = false, String? Function(String?)? validator, bool enabled = true}) {
+  Widget _inputField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType tipo = TextInputType.text,
+    bool isPassword = false,
+    String? Function(String?)? validator,
+    bool enabled = true,
+    bool enableVisibilityToggle = false,
+    bool isObscured = true,
+    VoidCallback? onToggleVisibility,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: tipo,
-      obscureText: isPassword,
+      obscureText: isPassword ? isObscured : false,
       style: TextStyle(
         fontWeight: FontWeight.w500, 
         color: enabled ? const Color(0xFF1E293B) : const Color(0xFF64748B)
@@ -428,6 +531,16 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
           ),
           child: Icon(icon, color: enabled ? const Color(0xFF8B5CF6) : const Color(0xFF9CA3AF)),
         ),
+        suffixIcon: isPassword && enableVisibilityToggle
+            ? IconButton(
+                tooltip: isObscured ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                icon: Icon(
+                  isObscured ? Icons.visibility_off : Icons.visibility,
+                  color: const Color(0xFF9CA3AF),
+                ),
+                onPressed: onToggleVisibility,
+              )
+            : null,
         labelText: label,
         labelStyle: TextStyle(
           fontWeight: FontWeight.w600, 
@@ -626,17 +739,18 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                         }
                         final docs = snapshot.data?.docs ?? [];
                         List<Map<String, dynamic>> estudiantes = docs
-                            .map((e) => {...?e.data() as Map<String, dynamic>, '_id': e.id})
+                            .map((e) => {...(e.data() as Map<String, dynamic>), '_id': e.id})
                             .toList();
                         
                         // Aplicar filtros
                         if (_busqueda.isNotEmpty) {
                           estudiantes = estudiantes.where((e) {
                             final nombre = (e['nombre'] ?? '').toString().toLowerCase();
+                            final apellidos = (e['apellidos'] ?? '').toString().toLowerCase();
                             final email = (e['email'] ?? '').toString().toLowerCase();
                             final dni = (e['dni'] ?? '').toString().toLowerCase();
                             final puntos = (e['puntos'] ?? 0).toString();
-                            return nombre.contains(_busqueda) || email.contains(_busqueda) || dni.contains(_busqueda) || puntos.contains(_busqueda);
+                            return nombre.contains(_busqueda) || apellidos.contains(_busqueda) || email.contains(_busqueda) || dni.contains(_busqueda) || puntos.contains(_busqueda);
                           }).toList();
                         }
                         if (_filtroTipoUsuario.isNotEmpty) {
@@ -763,8 +877,9 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                       dataRowColor: MaterialStateProperty.resolveWith<Color?>((states) => Colors.white),
                                       columnSpacing: isTablet ? 16 : 24,
                                       border: TableBorder.all(color: const Color(0xFFE0E7EF), width: 1),
-                                      columns: [
-                                        const DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                                       columns: [
+                                         const DataColumn(label: Text('Nombre/s', style: TextStyle(fontWeight: FontWeight.bold))),
+                                         const DataColumn(label: Text('Apellidos', style: TextStyle(fontWeight: FontWeight.bold))),
                                         const DataColumn(label: Text('DNI', style: TextStyle(fontWeight: FontWeight.bold))),
                                         const DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
                                         const DataColumn(label: Text('Celular', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -772,10 +887,11 @@ class _GestionEstudiantesScreenState extends State<GestionEstudiantesScreen> {
                                         const DataColumn(label: Text('Tipo de Usuario', style: TextStyle(fontWeight: FontWeight.bold))),
                                         const DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
                                       ],
-                                      rows: pageItems.map((e) {
+                                       rows: pageItems.map((e) {
                                         final puntos = e['puntos'] ?? 0;
                                         return DataRow(cells: [
-                                          DataCell(Text(e['nombre'] ?? '')),
+                                           DataCell(Text(e['nombre'] ?? '')),
+                                           DataCell(Text(e['apellidos'] ?? '')),
                                           DataCell(Text(e['dni'] ?? '')),
                                           DataCell(Text(e['email'] ?? '')),
                                           DataCell(Text(e['celular'] ?? '')),

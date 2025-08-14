@@ -1,7 +1,6 @@
 import 'package:app_comu/screens/gestion_estudiantes_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'detalle_prestamo_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // si usas Google Sign-In
 import '../main.dart';
@@ -31,11 +30,18 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   bool ordenarRecientesPrimero = true;
   int _selectedSection = 0; // 0: Usuarios, 1: Solicitudes, 2: Gestionar Estudiantes, 3: Gestionar Equipos
   bool _sidebarCollapsed = false; // Controla si el panel lateral está colapsado
+  final ScrollController _sidebarScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     obtenerUsuarios();
+  }
+
+  @override
+  void dispose() {
+    _sidebarScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> obtenerUsuarios() async {
@@ -60,7 +66,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         for (final equipoDoc in equiposACargoSnap.docs) {
           final equipo = equipoDoc.data();
           final equipoId = equipoDoc.id;
-          if (equipoId == null || equipoId.isEmpty) continue;
+          if (equipoId.isEmpty) continue;
 
           // Calcula tiempo restante si tienes fechas en el doc
           DateTime? fechaDevolucion;
@@ -399,7 +405,16 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           ),
         ],
       ),
-      child: Column(
+      child: Scrollbar(
+        controller: _sidebarScrollController,
+        thumbVisibility: true,
+        trackVisibility: true,
+        thickness: 6,
+        radius: const Radius.circular(12),
+        child: SingleChildScrollView(
+          controller: _sidebarScrollController,
+          padding: EdgeInsets.zero,
+          child: Column(
         children: [
           // Header de la barra lateral mejorado
           Container(
@@ -516,7 +531,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
               ],
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 20),
           // Botón Cerrar Sesión mejorado
           Padding(
             padding: EdgeInsets.symmetric(
@@ -668,6 +683,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
               ),
             ),
         ],
+          ),
+        ),
       ),
     );
   }
@@ -729,7 +746,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     );
   }
 
-  Future<void> _devolverEquipo(String equipoId, String userId) async {
+  Future<void> _devolverEquipo(String equipoId, String userId, {String? docUsuariosConEquipos, List<String> integrantesDnis = const [], String? fechaDevolucionStr}) async {
     try {
       // Cambia estado a Disponible y elimina fechas en colección equipos
       await FirebaseFirestore.instance
@@ -750,10 +767,45 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           .doc(equipoId)
           .delete();
 
+      // 3. Ajuste de puntos (usuario y, si aplica, integrantes). Basado en fechaDevolucionStr
+      if (fechaDevolucionStr != null && fechaDevolucionStr.isNotEmpty) {
+        DateTime? fechaDev;
+        try { fechaDev = DateFormat('dd/MM/yyyy').parse(fechaDevolucionStr); } catch (_) {}
+        final ahora = DateTime.now();
+        final aTiempo = fechaDev != null && !ahora.isAfter(fechaDev);
+        // Carga documento de usuario para puntos
+        final userDocRef = FirebaseFirestore.instance.collection('usuarios').doc(userId);
+        final userSnap = await userDocRef.get();
+        if (userSnap.exists) {
+          final puntos = (userSnap.data()?['puntos'] ?? 0) as int;
+          final nuevo = aTiempo ? (puntos + 1).clamp(0, 20) : (puntos - 1).clamp(0, 20);
+          await userDocRef.update({'puntos': nuevo});
+        }
+        // Integrantes penalización si fuera tarde
+        if (!aTiempo) {
+          for (final dni in integrantesDnis) {
+            if (dni.toString().isEmpty) continue;
+            final q = await FirebaseFirestore.instance
+                .collection('usuarios')
+                .where('dni', isEqualTo: dni)
+                .limit(1)
+                .get();
+            if (q.docs.isNotEmpty) {
+              final doc = q.docs.first.reference;
+              final pts = (q.docs.first.data()['puntos'] ?? 0) as int;
+              final nuevo = (pts - 1).clamp(0, 20);
+              await doc.update({'puntos': nuevo});
+            }
+          }
+        }
+      }
+
+      // 4. No eliminar el documento completo; este flujo ahora será manejado por el modal de devolución por equipo
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Equipo devuelto correctamente.')),
       );
-      await obtenerUsuarios(); // refresca la lista
+      // No necesario recargar manualmente; StreamBuilder actualiza en vivo
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al devolver: $e')),
@@ -1042,52 +1094,88 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           ),
           const SizedBox(height: 24),
           
-          // Lista de usuarios
+          // Lista en vivo desde 'usuarios_con_equipos'
           Expanded(
-            child: estudiantesFiltrados.isEmpty
-                ? Center(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('usuarios_con_equipos').snapshots(),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snap.hasError) {
+                  return Center(child: Text('Error: ${snap.error}'));
+                }
+                final docs = snap.data?.docs ?? [];
+                // Un documento por préstamo (no aplanar por equipo)
+                var visibles = docs.where((d) {
+                  final data = d.data() as Map<String, dynamic>;
+                  final nombre = (data['nombre'] ?? '').toString().toLowerCase();
+                  final dni = (data['dni'] ?? '').toString();
+                  final nombreMatch = nombre.contains(filtroNombre.toLowerCase());
+                  final dniMatch = filtroDni.isEmpty || dni.contains(filtroDni);
+                  return nombreMatch && dniMatch;
+                }).toList();
+                // Orden por fecha de devolución
+                visibles.sort((a, b) {
+                  final ad = (a.data() as Map<String, dynamic>)['fecha_devolucion'];
+                  final bd = (b.data() as Map<String, dynamic>)['fecha_devolucion'];
+                  DateTime pa, pb;
+                  if (ad is Timestamp) {
+                    pa = ad.toDate();
+                  } else if (ad is String) {
+                    try { pa = DateFormat('dd/MM/yyyy').parse(ad); } catch (_) { pa = DateTime.now(); }
+                  } else { pa = DateTime.now(); }
+                  if (bd is Timestamp) {
+                    pb = bd.toDate();
+                  } else if (bd is String) {
+                    try { pb = DateFormat('dd/MM/yyyy').parse(bd); } catch (_) { pb = DateTime.now(); }
+                  } else { pb = DateTime.now(); }
+                  return ordenarTiempoRestanteAsc ? pa.compareTo(pb) : pb.compareTo(pa);
+                });
+                if (visibles.isEmpty) {
+                  return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.people_outline,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
+                        Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
                         const SizedBox(height: 16),
-                        Text(
-                          "No hay usuarios con equipos en uso",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
+                        Text('No hay usuarios con equipos en uso', style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
                       ],
                     ),
-                  )
-                : ListView.separated(
-                    itemCount: estudiantesFiltrados.length,
+                  );
+                }
+                return ListView.separated(
+                  itemCount: visibles.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final estudiante = estudiantesFiltrados[index];
-                      final tiempo = estudiante['tiempo_restante'] as Duration;
+                    final doc = visibles[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    // final uid = (data['uid'] ?? '').toString();
+                    final nombre = (data['nombre'] ?? '---').toString();
+                    final dni = (data['dni'] ?? '---').toString();
+                    final equipos = (data['equipos'] as List?) ?? [];
+                    final equiposTexto = equipos.isEmpty ? '---' : equipos.map((e) => (e['nombre'] ?? '---').toString()).join(', ');
+                    final fd = data['fecha_devolucion'];
+                    // Calcular tiempo restante
+                    Duration tiempo = Duration.zero;
+                    DateTime? fechaLim;
+                    if (fd is Timestamp) {
+                      fechaLim = fd.toDate();
+                    } else if (fd is String) {
+                      try { fechaLim = DateFormat('dd/MM/yyyy').parse(fd); } catch (_) {}
+                    }
+                    if (fechaLim != null) {
+                      tiempo = fechaLim.difference(DateTime.now());
+                    }
                       final esExcedido = tiempo.inSeconds.isNegative;
-
                       return Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: esExcedido ? Colors.red.shade200 : Colors.green.shade200,
-                            width: 1,
-                          ),
+                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
+                        ],
+                        border: Border.all(color: esExcedido ? Colors.red.shade200 : Colors.green.shade200, width: 1),
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.all(20),
@@ -1097,165 +1185,58 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                               color: esExcedido ? Colors.red.shade100 : Colors.green.shade100,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Icon(
-                              Icons.person,
-                              color: esExcedido ? Colors.red.shade700 : Colors.green.shade700,
-                              size: 24,
-                            ),
-                          ),
-                          title: Text(
-                            estudiante['nombre'],
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
+                          child: Icon(Icons.person, color: esExcedido ? Colors.red.shade700 : Colors.green.shade700, size: 24),
+                        ),
+                        title: Text(nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.credit_card, size: 16, color: Colors.grey.shade600),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "DNI: ${estudiante['dni'] ?? '---'}",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              Icon(Icons.credit_card, size: 16, color: Colors.grey.shade600), const SizedBox(width: 8),
+                              Text('DNI: $dni', style: TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+                            ]),
                                 const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      esExcedido ? Icons.warning : Icons.access_time,
-                                      size: 16,
-                                      color: esExcedido ? Colors.red : Colors.green,
-                                    ),
+                            Row(children: [
+                              Icon(esExcedido ? Icons.warning : Icons.access_time, size: 16, color: esExcedido ? Colors.red : Colors.green),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      esExcedido
-                                          ? "Tiempo excedido: ${(-_dias(estudiante['tiempo_restante'])).toString()} días"
-                                          : "Tiempo restante: ${(_dias(estudiante['tiempo_restante'])).toString()} días",
-                                      style: TextStyle(
-                                        color: esExcedido ? Colors.red : Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              Text(esExcedido ? 'Tiempo excedido' : 'Tiempo restante: ${_dias(tiempo)} días',
+                                  style: TextStyle(color: esExcedido ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 14)),
+                            ]),
                                 const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(Icons.event, size: 16, color: Colors.grey.shade600),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      "Devolución: ${estudiante['fechaDevolucion'] ?? '---'}",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Botón Ver Detalles
+                            Row(children: [
+                              Icon(Icons.devices, size: 16, color: Colors.grey.shade600), const SizedBox(width: 8),
+                              Expanded(child: Text('Equipo(s): $equiposTexto', style: TextStyle(fontSize: 14, color: Colors.grey.shade700))),
+                            ]),
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              Icon(Icons.event, size: 16, color: Colors.grey.shade600), const SizedBox(width: 8),
+                              Text('Devolución: ${fd is Timestamp ? DateFormat('dd/MM/yyyy').format(fd.toDate()) : (fd?.toString() ?? '---')}',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700)),
+                            ]),
+                          ]),
+                        ),
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                               Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                            decoration: BoxDecoration(color: Colors.blue.shade100, borderRadius: BorderRadius.circular(8)),
                                 child: IconButton(
                                   icon: Icon(Icons.visibility, color: Colors.blue.shade700),
                                   tooltip: 'Ver detalles',
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => DetallePrestamoScreen(
-                                          estudiante: estudiante,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                              onPressed: () => _mostrarDetallePrestamoDoc(doc.id),
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Botón Devolver Equipo
                               Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
+                            decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
                                 child: IconButton(
                                   icon: Icon(Icons.assignment_return, color: Colors.green.shade700),
                                   tooltip: 'Devolver equipo',
-                                  onPressed: () async {
-                                    final confirmar = await showDialog<bool>(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                                        title: Row(
-                                          children: [
-                                            Icon(Icons.assignment_return, color: Colors.green.shade700),
-                                            const SizedBox(width: 8),
-                                            const Text('Devolver equipo'),
-                                          ],
-                                        ),
-                                        content: const Text(
-                                          '¿Estás seguro de devolver este equipo? Esta acción no se puede deshacer.',
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(ctx, false),
-                                            child: const Text('Cancelar'),
-                                          ),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.green.shade700,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                            ),
-                                            onPressed: () => Navigator.pop(ctx, true),
-                                            child: const Text('Devolver'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (confirmar == true) {
-                                      if (estudiante['equipoId'] != null && estudiante['id'] != null) {
-                                        await _devolverEquipo(estudiante['equipoId'], estudiante['id']);
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('No se encontró el ID del equipo.'),
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  },
+                              onPressed: () => _mostrarDevolverEquiposModal(doc.id),
                                 ),
                               ),
-                            ],
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetallePrestamoScreen(estudiante: estudiante),
+                        ]),
                               ),
                             );
                           },
-                        ),
                       );
                     },
                   ),
@@ -1490,7 +1471,11 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                           ],
                         ),
                       )
-                    : Container(
+                    : Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1100),
+                          child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -1528,7 +1513,16 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                               ),
                               DataColumn(
                                 label: Text(
-                                  "Equipo",
+                                      "DNI",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      "Equipo(s)",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.grey.shade800,
@@ -1538,6 +1532,15 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                               DataColumn(
                                 label: Text(
                                   "Fecha solicitud",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ),
+                                  DataColumn(
+                                    label: Text(
+                                      "Fecha devolución",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.grey.shade800,
@@ -1557,11 +1560,22 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                             rows: solicitudes.map<DataRow>((solicitud) {
                               final data = solicitud.data() as Map<String, dynamic>;
                               final nombre = data['nombre'] ?? '---';
-                              final equipo = data['equipos']?[0]?['nombre'] ?? '---';
+                                  final dni = (data['dni'] ?? '---').toString();
+                                  final equiposList = (data['equipos'] as List?) ?? [];
+                                  final equiposTexto = equiposList.isEmpty
+                                      ? '---'
+                                      : equiposList.map((e) => (e['nombre'] ?? '---').toString()).join(', ');
                               final fechaEnvio = data['fecha_envio'] is Timestamp
                                   ? DateFormat('dd/MM/yyyy').format(
                                       (data['fecha_envio'] as Timestamp).toDate())
                                   : '---';
+                                  final fechaDev = data['fecha_devolucion'];
+                                  String fechaDevStr = '---';
+                                  if (fechaDev is Timestamp) {
+                                    fechaDevStr = DateFormat('dd/MM/yyyy').format(fechaDev.toDate());
+                                  } else if (fechaDev is String) {
+                                    fechaDevStr = fechaDev;
+                                  }
                               return DataRow(
                                 cells: [
                                   DataCell(
@@ -1575,7 +1589,15 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                   ),
                                   DataCell(
                                     Text(
-                                      equipo,
+                                          dni,
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          equiposTexto,
                                       style: TextStyle(
                                         color: Colors.grey.shade700,
                                       ),
@@ -1589,11 +1611,18 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                       ),
                                     ),
                                   ),
+                                      DataCell(
+                                        Text(
+                                          fechaDevStr,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
                                   DataCell(
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        // Botón Visualizar
                                         Container(
                                           decoration: BoxDecoration(
                                             color: Colors.blue.shade100,
@@ -1606,7 +1635,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        // Botón Aceptar
                                         Container(
                                           decoration: BoxDecoration(
                                             color: Colors.green.shade100,
@@ -1619,7 +1647,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 8),
-                                        // Botón Rechazar
                                         Container(
                                           decoration: BoxDecoration(
                                             color: Colors.red.shade100,
@@ -1637,6 +1664,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                 ],
                               );
                             }).toList(),
+                              ),
+                            ),
                           ),
                         ),
                       );
@@ -1655,7 +1684,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
       BuildContext context, QueryDocumentSnapshot solicitud) async {
     final data = solicitud.data() as Map<String, dynamic>;
     final equipos = data['equipos'] as List? ?? [];
-    final equiposList = equipos.map((e) => e['nombre']).join(', ');
+    // final equiposList = equipos.map((e) => e['nombre']).join(', ');
 
     // Formatea fechas
     final fechaEnvio = data['fecha_envio'];
@@ -1678,8 +1707,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     // Consulta datos extra del equipo
     String categoria = "---";
     String codigoUC = "---";
-    String descripcion = "---";
-    if (equipos.isNotEmpty && equipos[0]?['id'] != null) {
+    // String descripcion = "---";
+    if (equipos.isNotEmpty) {
       final equipoId = equipos[0]['id'];
       try {
         final equipoDoc = await FirebaseFirestore.instance
@@ -1690,7 +1719,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
           final equipoData = equipoDoc.data();
           categoria = equipoData?['categoria'] ?? "---";
           codigoUC = equipoData?['codigoUC'] ?? "---";
-          descripcion = equipoData?['descripcion'] ?? "---";
+          // descripcion = equipoData?['descripcion'] ?? "---";
         }
       } catch (_) {}
     }
@@ -1698,76 +1727,457 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text("Detalles de la Solicitud"),
-          content: Column(
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.assignment, color: Colors.orange.shade700),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Detalles de la Solicitud',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _infoRow('Solicitante', data['nombre'] ?? '---', icon: Icons.person),
+                  _infoRow('Apellidos', data['apellidos'] ?? '---', icon: Icons.person_outline),
+                  _infoRow('DNI', (data['dni'] ?? '---').toString(), icon: Icons.credit_card),
+                  _infoRow('Email', data['email'] ?? '---', icon: Icons.email),
+                  _infoRow('Celular', data['celular'] ?? '---', icon: Icons.phone),
+                  _infoRow('Tipo de usuario', data['tipoUsuario'] ?? '---', icon: Icons.badge),
+                  const Divider(height: 24),
+                  _infoRow('Asignatura', data['asignatura'] ?? '---', icon: Icons.class_),
+                  _infoRow('Curso', data['curso'] ?? '---', icon: Icons.menu_book),
+                  _infoRow('Docente', data['docente'] ?? '---', icon: Icons.person_pin),
+                  _infoRow('Lugar', data['lugar'] ?? '---', icon: Icons.place),
+                  _infoRow('Trabajo a realizar', data['trabajo'] ?? '---', icon: Icons.work_outline),
+                  _infoRow('Nombre de grupo', data['nombre_grupo'] ?? '---', icon: Icons.group),
               Row(children: [
-                Icon(Icons.person, color: Colors.blueGrey),
-                SizedBox(width: 8),
-                Text("Nombre: ", style: TextStyle(fontWeight: FontWeight.bold)),
-                Flexible(child: Text(data['nombre'] ?? '---')),
-              ]),
-              SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.devices, color: Colors.deepPurple),
-                SizedBox(width: 8),
-                Text("Equipo(s): ",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Flexible(child: Text(equiposList)),
-              ]),
-              SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.event, color: Colors.orange),
-                SizedBox(width: 8),
-                Text("Fecha solicitud: ",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Flexible(child: Text(fechaEnvioStr)),
-              ]),
-              SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.event_available, color: Colors.green),
-                SizedBox(width: 8),
-                Text("Fecha devolución: ",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Flexible(child: Text(fechaDevolucionStr)),
-              ]),
-              SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.category, color: Colors.brown),
-                SizedBox(width: 8),
-                Text("Categoría: ",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Flexible(child: Text(categoria)),
-              ]),
-              SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.qr_code, color: Colors.black45),
-                SizedBox(width: 8),
-                Text("Código UC: ",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Flexible(child: Text(codigoUC)),
-              ]),
-              SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.description, color: Colors.teal),
-                SizedBox(width: 8),
-                Text("Descripción: ",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Flexible(child: Text(descripcion)),
-              ]),
-            ],
-          ),
-          actions: [
+                    Expanded(child: _infoRow('Semestre', data['semestre'] ?? '---', icon: Icons.school)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _infoRow('NRC', data['nrc'] ?? '---', icon: Icons.confirmation_number)),
+                  ]),
+                  const Divider(height: 24),
+                  _infoRow('Fecha de entrega', data['fecha_prestamo']?.toString() ?? '---', icon: Icons.event),
+                  _infoRow('Fecha de devolución', fechaDevolucionStr, icon: Icons.event_available),
+                  _infoRow('Fecha de envío', fechaEnvioStr, icon: Icons.send_time_extension),
+                  const SizedBox(height: 8),
+                  Text('Integrantes', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+                  const SizedBox(height: 6),
+                  Builder(builder: (_) {
+                    final integrantes = (data['integrantes'] as List?)?.cast<String>() ?? const [];
+                    if (integrantes.isEmpty) {
+                      return Text('Único integrante: solicitante', style: TextStyle(color: Colors.grey.shade700));
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: integrantes
+                          .asMap()
+                          .entries
+                          .map((e) => Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                child: Text('${e.key + 2}. DNI: ${e.value}', style: TextStyle(color: Colors.grey.shade800)),
+                              ))
+                          .toList(),
+                    );
+                  }),
+                  const Divider(height: 24),
+                  Text('Equipos solicitados', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+                  const SizedBox(height: 6),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade100),
+                    ),
+                    child: Column(
+                      children: equipos.map((e) {
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          leading: const Icon(Icons.devices_other, color: Colors.orange),
+                          title: Text(e['nombre'] ?? '---', style: const TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: Text(
+                            [
+                              if ((e['descripcion'] ?? '').toString().isNotEmpty) (e['descripcion']).toString(),
+                              if (categoria != '---') 'Categoría: $categoria',
+                              if (codigoUC != '---') 'Código UC: $codigoUC',
+                            ].join(' • '),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cerrar"),
+                        child: const Text('Cerrar'),
             ),
           ],
+                  )
+                ],
+              ),
+            ),
+          ),
         );
       },
+    );
+  }
+
+  // Mostrar detalle desde doc de 'usuarios_con_equipos' en modal profesional
+  Future<void> _mostrarDetallePrestamoDoc(String docId) async {
+    try {
+      final snap = await FirebaseFirestore.instance.collection('usuarios_con_equipos').doc(docId).get();
+      if (!snap.exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se encontró el detalle.')));
+        }
+        return;
+      }
+      final data = snap.data() as Map<String, dynamic>;
+      final equipos = (data['equipos'] as List?) ?? [];
+      final integrantes = (data['integrantes'] as List?)?.cast<String>() ?? const [];
+      String fechaPrestamoStr = (data['fecha_prestamo'] ?? '---').toString();
+      String fechaDevolucionStr;
+      final fd = data['fecha_devolucion'];
+      if (fd is Timestamp) {
+        fechaDevolucionStr = DateFormat('dd/MM/yyyy').format(fd.toDate());
+      } else {
+        fechaDevolucionStr = (fd ?? '---').toString();
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+              Row(children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.assignment_turned_in, color: Colors.green.shade700),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Detalle de Préstamo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ]),
+                    const SizedBox(height: 16),
+                    _infoRow('Solicitante', (data['nombre'] ?? '---').toString(), icon: Icons.person),
+                    _infoRow('Apellidos', (data['apellidos'] ?? '---').toString(), icon: Icons.person_outline),
+                    _infoRow('DNI', (data['dni'] ?? '---').toString(), icon: Icons.credit_card),
+                    _infoRow('Email', (data['email'] ?? '---').toString(), icon: Icons.email),
+                    _infoRow('Celular', (data['celular'] ?? '---').toString(), icon: Icons.phone),
+                    const Divider(height: 24),
+                    _infoRow('Asignatura', (data['asignatura'] ?? '---').toString(), icon: Icons.class_),
+                    _infoRow('Curso', (data['curso'] ?? '---').toString(), icon: Icons.menu_book),
+                    _infoRow('Docente', (data['docente'] ?? '---').toString(), icon: Icons.person_pin),
+                    _infoRow('Lugar', (data['lugar'] ?? '---').toString(), icon: Icons.place),
+                    _infoRow('Trabajo a realizar', (data['trabajo'] ?? '---').toString(), icon: Icons.work_outline),
+                    _infoRow('Nombre de grupo', (data['nombre_grupo'] ?? '---').toString(), icon: Icons.group),
+              Row(children: [
+                      Expanded(child: _infoRow('Semestre', (data['semestre'] ?? '---').toString(), icon: Icons.school)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _infoRow('NRC', (data['nrc'] ?? '---').toString(), icon: Icons.confirmation_number)),
+                    ]),
+                    const Divider(height: 24),
+                    _infoRow('Fecha de préstamo', fechaPrestamoStr, icon: Icons.event),
+                    _infoRow('Fecha de devolución', fechaDevolucionStr, icon: Icons.event_available),
+                    const SizedBox(height: 8),
+                    Text('Integrantes', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+                    const SizedBox(height: 6),
+                    if (integrantes.isEmpty)
+                      Text('Único integrante: solicitante', style: TextStyle(color: Colors.grey.shade700))
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: integrantes
+                            .asMap()
+                            .entries
+                            .map((e) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  child: Text('${e.key + 2}. DNI: ${e.value}', style: TextStyle(color: Colors.grey.shade800)),
+                                ))
+                            .toList(),
+                      ),
+                    const Divider(height: 24),
+                    Text('Equipos', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+                    const SizedBox(height: 6),
+                    Container(
+                      decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.green.shade100)),
+                      child: Column(
+                        children: equipos.map((e) {
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            leading: const Icon(Icons.devices_other, color: Colors.green),
+                            title: Text((e['nombre'] ?? '---').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                            subtitle: Text((e['descripcion'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                      TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cerrar')),
+                    ])
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar detalle: $e')));
+      }
+    }
+  }
+
+  // Modal para devolver equipos uno por uno con condición/estado
+  Future<void> _mostrarDevolverEquiposModal(String docId) async {
+    final docRef = FirebaseFirestore.instance.collection('usuarios_con_equipos').doc(docId);
+    final snap = await docRef.get();
+    if (!snap.exists) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se encontró el préstamo.')));
+      return;
+    }
+    final data = snap.data() as Map<String, dynamic>;
+    final uid = (data['uid'] ?? '').toString();
+    final equipos = (data['equipos'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? [];
+    final integrantes = (data['integrantes'] as List?)?.cast<String>() ?? const [];
+    final fd = data['fecha_devolucion'];
+    final fechaDevolucionStr = fd is Timestamp ? DateFormat('dd/MM/yyyy').format(fd.toDate()) : (fd?.toString() ?? '');
+
+    // Estados locales para edición por equipo
+    final condiciones = ['Nuevo', 'Bueno', 'Regular', 'Defectuoso'];
+
+    final editedEquipos = await showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 750),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+              Row(children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.assignment_return, color: Colors.red.shade700),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Devolver equipos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ]),
+                    const SizedBox(height: 12),
+                    ...equipos.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final eq = entry.value;
+                      final nombre = (eq['nombre'] ?? '---').toString();
+                      String condicion = (eq['condicion'] ?? 'Bueno').toString();
+                      String estado = (eq['estado'] ?? 'Disponible').toString();
+                      // Sin interacción del usuario, asegurar que los valores visibles queden persistidos
+                      if (equipos[idx]['condicion'] == null) {
+                        equipos[idx]['condicion'] = condicion;
+                      }
+                      if (equipos[idx]['estado'] == null) {
+                        // Si la condición es Defectuoso, forzar Mantenimiento
+                        equipos[idx]['estado'] = condicion == 'Defectuoso' ? 'Mantenimiento' : estado;
+                      }
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(nombre, style: const TextStyle(fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 8),
+              Row(children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: condicion,
+                                  items: condiciones.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                                  decoration: const InputDecoration(labelText: 'Condición', border: OutlineInputBorder()),
+                                  onChanged: (val) {
+                                    setState(() {
+                                      condicion = val ?? condicion;
+                                      equipos[idx]['condicion'] = condicion;
+                                      if (condicion == 'Defectuoso') {
+                                        estado = 'Mantenimiento';
+                                        equipos[idx]['estado'] = estado;
+                                      }
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: estado,
+                                  items: <String>['Disponible', 'Mantenimiento']
+                                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                      .toList(),
+                                  decoration: const InputDecoration(labelText: 'Estado', border: OutlineInputBorder()),
+                                  onChanged: (val) {
+                                    setState(() {
+                                      estado = val ?? estado;
+                                      // Si es defectuoso debe ir a mantenimiento
+                                      if ((equipos[idx]['condicion'] ?? '') == 'Defectuoso') {
+                                        estado = 'Mantenimiento';
+                                      }
+                                      equipos[idx]['estado'] = estado;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ]),
+                            const SizedBox(height: 8),
+                          ]),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(onPressed: () => Navigator.of(context).pop(null), child: const Text('Cancelar')),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            // Persistir por si algún item quedó sin tocar: normalizar estados respecto a condición
+                            final snapshotEquipos = List<Map<String, dynamic>>.from(equipos.map((e) {
+                              final cond = (e['condicion'] ?? 'Bueno').toString();
+                              final est = (e['estado'] ?? 'Disponible').toString();
+                              return {
+                                ...e,
+                                'condicion': cond,
+                                'estado': cond == 'Defectuoso' ? 'Mantenimiento' : est,
+                              };
+                            }));
+                            Navigator.of(context).pop(snapshotEquipos);
+                          },
+                          icon: const Icon(Icons.save),
+                          label: const Text('Devolver equipos'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+      },
+    );
+
+    if (editedEquipos == null) {
+      return;
+    }
+
+    // Confirmación final antes de ejecutar
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmar devolución'),
+        content: const Text('¿Deseas guardar los cambios y devolver los equipos?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sí')),
+        ],
+      ),
+    );
+    if (ok != true) {
+      // Reabrir modal si el usuario decide no confirmar
+      await _mostrarDevolverEquiposModal(docId);
+      return;
+    }
+
+    // Ejecutar devolución de todos los equipos editados sin más interacción
+    for (var i = 0; i < editedEquipos.length; i++) {
+      final eq = editedEquipos[i];
+      final equipoId = (eq['id'] ?? '').toString();
+      if (equipoId.isEmpty) continue;
+      final condicionSel = (eq['condicion'] ?? 'Bueno').toString();
+      final estadoSel = condicionSel == 'Defectuoso'
+          ? 'Mantenimiento'
+          : ((eq['estado'] ?? 'Disponible').toString());
+      await FirebaseFirestore.instance.collection('equipos').doc(equipoId).update({
+        'estado': estadoSel,
+        'condicion': condicionSel,
+      });
+      await _devolverEquipo(
+        equipoId,
+        uid,
+        integrantesDnis: integrantes,
+        fechaDevolucionStr: fechaDevolucionStr,
+      );
+    }
+
+    // Borra el documento completo de usuarios_con_equipos tras devolver todo
+    await docRef.delete();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Devolución completada.')));
+    }
+  }
+
+  Widget _infoRow(String label, String value, {IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: Colors.grey.shade700),
+            const SizedBox(width: 8),
+          ],
+          SizedBox(
+            width: 180,
+            child: Text(label, style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade800)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(value.isEmpty ? '---' : value, style: TextStyle(color: Colors.grey.shade700)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1803,14 +2213,19 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         return;
       }
 
-      final fechaPrestamo = DateTime.now();
-      final fechaDevolucion = fechaPrestamo.add(Duration(days: diasPrestamo));
-      final fechaDevolucionStr =
-          DateFormat('dd/MM/yyyy').format(fechaDevolucion);
-      final fechaDevolucionTS = Timestamp.fromDate(fechaDevolucion);
+      // final fechaPrestamo = DateTime.now();
+      // final fechaDevolucion = fechaPrestamo.add(Duration(days: diasPrestamo));
 
       final equipos = solicitud['equipos'] as List;
       final uidSolicitante = solicitud['uid'] as String;
+
+      // Si se acepta: persistir en usuarios_con_equipos
+      if (accion == "Aceptada") {
+        final dataSolicitud = solicitud.data() as Map<String, dynamic>;
+        await FirebaseFirestore.instance.collection('usuarios_con_equipos').add({
+          ...dataSolicitud,
+        });
+      }
 
       for (var equipo in equipos) {
         // Fecha de solicitud (del campo 'fecha_envio' de la solicitud)

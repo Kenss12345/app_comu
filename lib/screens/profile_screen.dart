@@ -296,6 +296,27 @@ class _ProfileContentState extends State<ProfileContent> {
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final isPasswordUser = user?.providerData.any((p) => p.providerId == 'password') ?? false;
+                      if (!isPasswordUser) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Tu cuenta se autenticó con Google. El cambio de contraseña no está disponible aquí.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                      _mostrarDialogoCambiarContrasena();
+                    },
+                    icon: const Icon(Icons.lock_reset),
+                    label: const Text('Cambiar Contraseña'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _isEditing ? _updateUserData : () async {
                       // Desconecta la sesión de Google
@@ -358,6 +379,183 @@ class _ProfileContentState extends State<ProfileContent> {
               ),
             ],
           );
+  }
+
+  bool _passwordCumplePolitica(String value) {
+    if (value.length < 8) return false;
+    final hasUpper = RegExp(r'[A-Z]').hasMatch(value);
+    final hasNumber = RegExp(r'\\d').hasMatch(value);
+    final hasSpecial = RegExp(r'[^\\w\\s]').hasMatch(value);
+    return hasUpper && hasNumber && hasSpecial;
+  }
+
+  Future<void> _mostrarDialogoCambiarContrasena() async {
+    final currentController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    bool loading = false;
+    String? errorText;
+
+    if (user == null || user!.email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo obtener el usuario actual.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Cambiar Contraseña'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: currentController,
+                      obscureText: obscureCurrent,
+                      decoration: InputDecoration(
+                        labelText: 'Contraseña actual',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureCurrent ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () => setState(() => obscureCurrent = !obscureCurrent),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: newController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'Nueva contraseña',
+                        prefixIcon: const Icon(Icons.lock),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () => setState(() => obscureNew = !obscureNew),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: confirmController,
+                      obscureText: obscureConfirm,
+                      decoration: InputDecoration(
+                        labelText: 'Confirmar nueva contraseña',
+                        prefixIcon: const Icon(Icons.lock),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility),
+                          onPressed: () => setState(() => obscureConfirm = !obscureConfirm),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'La nueva contraseña debe incluir:\n- Mínimo 8 caracteres\n- 1 letra mayúscula\n- 1 número\n- 1 caracter especial',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                      ),
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(errorText!, style: const TextStyle(color: Colors.red)),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: loading ? null : () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: loading
+                      ? null
+                      : () async {
+                          final actual = currentController.text.trim();
+                          final nueva = newController.text.trim();
+                          final confirma = confirmController.text.trim();
+
+                          if (actual.isEmpty || nueva.isEmpty || confirma.isEmpty) {
+                            setState(() => errorText = 'Completa todos los campos.');
+                            return;
+                          }
+                          if (nueva != confirma) {
+                            setState(() => errorText = 'La confirmación no coincide.');
+                            return;
+                          }
+                          if (!_passwordCumplePolitica(nueva)) {
+                            setState(() => errorText = 'La contraseña no cumple los requisitos.');
+                            return;
+                          }
+
+                          setState(() {
+                            errorText = null;
+                            loading = true;
+                          });
+
+                          try {
+                            final cred = EmailAuthProvider.credential(
+                              email: user!.email!,
+                              password: actual,
+                            );
+                            await user!.reauthenticateWithCredential(cred);
+                            await user!.updatePassword(nueva);
+
+                            if (!mounted) return;
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Contraseña actualizada correctamente.'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } on FirebaseAuthException catch (e) {
+                            String msg = 'Error al actualizar la contraseña.';
+                            if (e.code == 'wrong-password') {
+                              msg = 'La contraseña actual es incorrecta.';
+                            } else if (e.code == 'weak-password') {
+                              msg = 'La nueva contraseña es demasiado débil.';
+                            } else if (e.code == 'requires-recent-login') {
+                              msg = 'Por seguridad, vuelve a iniciar sesión e inténtalo de nuevo.';
+                            }
+                            setState(() {
+                              errorText = msg;
+                              loading = false;
+                            });
+                          } catch (_) {
+                            setState(() {
+                              errorText = 'Ocurrió un error inesperado.';
+                              loading = false;
+                            });
+                          }
+                        },
+                  child: loading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Guardar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   // Método para mostrar información detallada del sistema de puntajes
