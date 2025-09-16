@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:app_comu/utils/carrito_equipos.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:app_comu/utils/temporizador_reserva.dart';
 
 class EquiposDisponiblesScreen extends StatefulWidget {
   const EquiposDisponiblesScreen({super.key});
@@ -24,6 +25,24 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
 
   List<Map<String, dynamic>> equipos = [];
   final List<Map<String, dynamic>> equiposACargo = [];
+
+  // Función para validar si una URL de imagen es válida
+  bool _esImagenValida(String? url) {
+    if (url == null || url.trim().isEmpty) return false;
+    // Verificar que sea una URL válida de red (http o https)
+    return url.startsWith('http://') || url.startsWith('https://');
+  }
+
+  // Función para obtener la primera imagen válida de un equipo
+  String? _obtenerPrimeraImagenValida(List<dynamic>? imagenes) {
+    if (imagenes == null || imagenes.isEmpty) return null;
+    for (var img in imagenes) {
+      if (_esImagenValida(img?.toString())) {
+        return img.toString();
+      }
+    }
+    return null;
+  }
 
   @override
   void initState() {
@@ -222,7 +241,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       final equipoConFechas = {
         ...equipo,
         "estado_prestamo": "Pendiente",
-        "imagen": equipo['imagenes'].isNotEmpty ? equipo['imagenes'][0] : "",
+        "imagen": _obtenerPrimeraImagenValida(equipo['imagenes']) ?? "",
       };
 
       CarritoEquipos().agregarEquipo(equipoConFechas);
@@ -237,6 +256,9 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
             .doc(equipo['id'])
             .set(equipoConFechas);
       }
+
+      // Iniciar temporizador global si no está activo
+      TemporizadorReservas.instance.iniciarSiNoActivo();
 
       _cerrarDialogoBloqueante();
       if (mounted) {
@@ -298,12 +320,39 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                         viewportFraction: 1,
                         enlargeCenterPage: false,
                       ),
-                      items: (equipo["imagenes"] as List).isNotEmpty
-                          ? equipo["imagenes"].map<Widget>((img) {
-                              return Image.network(img,
-                                  fit: BoxFit.cover, width: double.infinity);
-                            }).toList()
-                          : [const Icon(Icons.broken_image, size: 200)],
+                      items: () {
+                        final imagenesValidas = (equipo["imagenes"] as List)
+                            .where((img) => _esImagenValida(img?.toString()))
+                            .toList();
+                        
+                        if (imagenesValidas.isNotEmpty) {
+                          return imagenesValidas.map<Widget>((img) {
+                            return Image.network(img,
+                                fit: BoxFit.cover, width: double.infinity);
+                          }).toList();
+                        } else {
+                          return [
+                            Container(
+                              width: double.infinity,
+                              height: 250,
+                              color: Colors.grey.shade100,
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.image_not_supported, 
+                                       size: 80, color: Colors.grey),
+                                  SizedBox(height: 12),
+                                  Text("Sin imagen",
+                                       style: TextStyle(
+                                         fontSize: 18,
+                                         fontWeight: FontWeight.w500,
+                                         color: Colors.grey)),
+                                ],
+                              ),
+                            )
+                          ];
+                        }
+                      }(),
                     ),
                   ),
 
@@ -400,22 +449,27 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     }
 
     if (_puntosUsuario == 0) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("Equipos Disponibles"),
-          backgroundColor: Colors.orange.shade600,
-        ),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text(
-              "Usuario bloqueado, no puede solicitar equipos. Acérquese a la oficina de equipos para regular su estado.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+      return Stack(
+        children: [
+          Scaffold(
+            appBar: AppBar(
+              title: const Text("Equipos Disponibles"),
+              backgroundColor: Colors.orange.shade600,
+            ),
+            body: const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Text(
+                  "Usuario bloqueado, no puede solicitar equipos. Acérquese a la oficina de equipos para regular su estado.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ),
-        ),
+          const TemporizadorReservaBanner(),
+        ],
       );
     }
 
@@ -441,15 +495,17 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       categoriasAgrupadas[categoria]!.add(equipo);
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Equipos Disponibles"),
-        backgroundColor: Colors.orange.shade600,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Column(
-          children: [
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: const Text("Equipos Disponibles"),
+            backgroundColor: Colors.orange.shade600,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Column(
+              children: [
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -557,18 +613,54 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                             ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(10),
-                                              child:
-                                                  equipo["imagenes"].isNotEmpty
-                                                      ? Image.network(
-                                                          equipo["imagenes"][0],
-                                                          width: 60,
-                                                          height: 60,
-                                                          fit: BoxFit.cover,
-                                                        )
-                                                      : const Icon(
-                                                          Icons.broken_image,
-                                                          size: 60,
-                                                          color: Colors.grey),
+                                              child: () {
+                                                final primeraImagenValida = 
+                                                    _obtenerPrimeraImagenValida(equipo["imagenes"]);
+                                                
+                                                if (primeraImagenValida != null) {
+                                                  return Image.network(
+                                                    primeraImagenValida,
+                                                    width: 60,
+                                                    height: 60,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Container(
+                                                        width: 60,
+                                                        height: 60,
+                                                        color: Colors.grey.shade100,
+                                                        child: const Column(
+                                                          mainAxisAlignment: MainAxisAlignment.center,
+                                                          children: [
+                                                            Icon(Icons.image_not_supported,
+                                                                 size: 24, color: Colors.grey),
+                                                            Text("Sin imagen",
+                                                                 style: TextStyle(
+                                                                   fontSize: 8,
+                                                                   color: Colors.grey)),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                  );
+                                                } else {
+                                                  return Container(
+                                                    width: 60,
+                                                    height: 60,
+                                                    color: Colors.grey.shade100,
+                                                    child: const Column(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Icon(Icons.image_not_supported,
+                                                             size: 24, color: Colors.grey),
+                                                        Text("Sin imagen",
+                                                             style: TextStyle(
+                                                               fontSize: 8,
+                                                               color: Colors.grey)),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }
+                                              }(),
                                             ),
                                             const SizedBox(width: 12),
                                             Expanded(
@@ -662,9 +754,12 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                           }).toList(),
                         ),
             ),
-          ],
+              ],
+            ),
+          ),
         ),
-      ),
+        const TemporizadorReservaBanner(),
+      ],
     );
   }
 }

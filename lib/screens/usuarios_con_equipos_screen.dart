@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // si usas Google Sign-In
 import '../main.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server/gmail.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'gestion_equipos_screen.dart';
 
@@ -101,53 +101,71 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
     });
   }
 
-  // Método para enviar correo de notificación al estudiante
-  Future<void> _enviarCorreoNotificacion(String destinatario, String estado,
-      Map<String, dynamic> solicitud) async {
-    // Configura tu correo SMTP (Gmail en este ejemplo)
-    String username = 'kenss12345@gmail.com'; // Reemplaza por tu correo Gmail
-    String password =
-        'qsex cejw glnq namr'; // Contraseña de aplicación de Gmail
+  // EmailJS - Configuración (rellenar con tus valores reales)
+  static const String _emailJsServiceId = 'service_g9z5wq1';
+  static const String _emailJsTemplateIdSolicitudEstado = 'template_vprkgmd';
+  static const String _emailJsPublicKey = '1YM2-UMljnkfRuBmm';
 
-    final smtpServer = gmail(username, password);
+  // Método para enviar correo de notificación al estudiante con EmailJS
+  Future<void> _enviarCorreoNotificacion(
+    String destinatario,
+    String estado,
+    Map<String, dynamic> solicitud,
+  ) async {
+    final uri = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
 
-    // Construir el contenido del correo
-    String contenidoEquipos = (solicitud['equipos'] as List)
-        .map((e) => "- ${e['nombre']}")
+    // Usar un único template; el contenido varía por {{estado}}
+    final templateId = _emailJsTemplateIdSolicitudEstado;
+
+    // Construir listado de equipos en texto
+    final equipos = (solicitud['equipos'] as List?) ?? [];
+    final contenidoEquipos = equipos
+        .map((e) => "- ${e['nombre'] ?? ''}")
         .join("\n");
 
-    final message = Message()
-      ..from = Address(username, 'Soporte Audiovisual')
-      ..recipients.add(destinatario)
-      ..subject = 'Estado de tu solicitud de préstamo - $estado'
-      ..text = '''
-  Hola ${solicitud['nombre']},
+    // Fechas formateadas dd/MM/yyyy
+    String _fmt(dynamic v) {
+      if (v == null) return '';
+      if (v is Timestamp) return DateFormat('dd/MM/yyyy').format(v.toDate());
+      if (v is DateTime) return DateFormat('dd/MM/yyyy').format(v);
+      return v.toString();
+    }
+    final fechaPrestamoStr = _fmt(solicitud['fecha_prestamo']);
+    final fechaDevolucionStr = _fmt(solicitud['fecha_devolucion']);
 
-  Tu solicitud de préstamo ha sido $estado.
-
-  Detalles de tu solicitud:
-  - Asignatura: ${solicitud['asignatura']}
-  - Trabajo a realizar: ${solicitud['trabajo']}
-  - Docente: ${solicitud['docente']}
-  - Lugar: ${solicitud['lugar']}
-  - Fecha de entrega: ${solicitud['fecha_prestamo']}
-  - Fecha de devolución: ${solicitud['fecha_devolucion']}
-  - Hora de salida: ${solicitud['hora_salida']}
-
-  Equipos solicitados:
-  $contenidoEquipos
-
-  Gracias por utilizar nuestro sistema.
-
-  Atentamente,
-  Soporte Audiovisual
-  ''';
+    final payload = {
+      'service_id': _emailJsServiceId,
+      'template_id': templateId,
+      'user_id': _emailJsPublicKey,
+      'template_params': {
+        'to_email': destinatario,
+        'to_name': '${solicitud['nombre'] ?? ''} ${solicitud['apellidos'] ?? ''}',
+        'nombre': solicitud['nombre'] ?? '',
+        'apellidos': solicitud['apellidos'] ?? '',
+        'dni': (solicitud['dni'] ?? '').toString(),
+        'asignatura': solicitud['asignatura'] ?? '',
+        'trabajo': solicitud['trabajo'] ?? '',
+        'docente': solicitud['docente'] ?? '',
+        'lugar': solicitud['lugar'] ?? '',
+        'fecha_prestamo': fechaPrestamoStr,
+        'fecha_devolucion': fechaDevolucionStr,
+        'equipos': contenidoEquipos,
+        'estado': estado,
+      },
+    };
 
     try {
-      final sendReport = await send(message, smtpServer);
-      print('Correo enviado: ' + sendReport.toString());
-    } on MailerException catch (e) {
-      print('Fallo al enviar correo: $e');
+      final resp = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        throw Exception('EmailJS error ${resp.statusCode}: ${resp.body}');
+      }
+    } catch (e) {
+      // Registrar error pero sin bloquear el flujo
+      // Puedes mostrar SnackBar si lo deseas
     }
   }
 

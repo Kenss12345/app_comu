@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:app_comu/utils/carrito_equipos.dart';
 import 'package:intl/intl.dart';
+import 'package:app_comu/utils/temporizador_reserva.dart';
 
 class EquiposACargoScreen extends StatefulWidget {
   const EquiposACargoScreen({super.key});
@@ -270,17 +271,19 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
 
     final hayEquiposEnUso = _hayEquiposEnUso();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Equipos a Cargo"),
-        backgroundColor: Colors.orange.shade600,
-        elevation: 2,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: const Text("Equipos a Cargo"),
+            backgroundColor: Colors.orange.shade600,
+            elevation: 2,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Container(
               decoration: BoxDecoration(
                 color: Colors.orange.shade50,
@@ -479,9 +482,12 @@ class _EquiposACargoScreenState extends State<EquiposACargoScreen> {
                   ),
                 ),
               ),
-          ],
+              ],
+            ),
+          ),
         ),
-      ),
+        const TemporizadorReservaBanner(),
+      ],
     );
   }
 }

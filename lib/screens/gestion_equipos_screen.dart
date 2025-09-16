@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class GestionEquiposScreen extends StatefulWidget {
   const GestionEquiposScreen({Key? key}) : super(key: key);
@@ -272,20 +273,23 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                     'tipoEquipo': tipoEquipo,
                                   };
                                   if (docId == null) {
-                                          // Crear con ID = nombre (validado y único)
+                                          // Crear con ID = nombre (validado y único) sin transacción para evitar errores genéricos en Web
                                           final desiredId = _sanitizeDocId(nombreController.text);
                                           if (desiredId.isEmpty) {
-                                            throw Exception('El nombre no es válido para ID de documento.');
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('El nombre no es válido para el ID del documento.')),
+                                            );
+                                            return;
                                           }
-                                          final equiposCol = FirebaseFirestore.instance.collection('equipos');
-                                          await FirebaseFirestore.instance.runTransaction((tx) async {
-                                            final docRef = equiposCol.doc(desiredId);
-                                            final snap = await tx.get(docRef);
-                                            if (snap.exists) {
-                                              throw Exception('Ya existe un equipo con ese nombre.');
-                                            }
-                                            tx.set(docRef, data);
-                                          });
+                                          final docRef = FirebaseFirestore.instance.collection('equipos').doc(desiredId);
+                                          final existing = await docRef.get();
+                                          if (existing.exists) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Ya existe un equipo con ese nombre.')),
+                                            );
+                                            return;
+                                          }
+                                          await docRef.set(data);
                                   } else {
                                     await FirebaseFirestore.instance.collection('equipos').doc(docId).update(data);
                                   }
@@ -294,14 +298,21 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                     SnackBar(content: Text(docId == null ? 'Equipo registrado' : 'Equipo actualizado')),
                                   );
                                   setState(() {}); // Refrescar lista
+                                } on FirebaseException catch (e) {
+                                  final message = (e.message == null || e.message!.isEmpty)
+                                      ? 'Error de Firebase (${e.code})'
+                                      : 'Error de Firebase (${e.code}): ${e.message}';
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(message)),
+                                  );
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('Error al guardar: $e')),
                                   );
-                                      } finally {
-                                        setStateDialog(() {
-                                          _subiendoImagenes = false;
-                                        });
+                                } finally {
+                                  setStateDialog(() {
+                                    _subiendoImagenes = false;
+                                  });
                                 }
                               },
                             ),

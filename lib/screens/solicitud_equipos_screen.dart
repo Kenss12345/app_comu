@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:app_comu/utils/carrito_equipos.dart';
 import 'package:intl/intl.dart';
+import 'package:app_comu/utils/temporizador_reserva.dart';
 
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
@@ -362,6 +363,8 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Solicitud enviada correctamente")),
           );
+          // Cancelar temporizador global al enviar a tiempo
+          TemporizadorReservas.instance.cancelarPorSolicitud();
           Navigator.pop(context, true); // Volver atrás
         }
       }
