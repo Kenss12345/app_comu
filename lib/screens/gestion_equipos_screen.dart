@@ -26,8 +26,8 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
   String _filtroNumero = '';
   String _filtroTipoEquipo = '';
 
-  // Para imágenes seleccionadas
-  List<XFile?> _imagenes = [null, null, null];
+  // Para imagen seleccionada
+  XFile? _imagen;
 
   bool _subiendoImagenes = false;
 
@@ -46,32 +46,25 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
     return s.replaceAll(RegExp(r"[\s/\\]"), '_');
   }
 
-  Future<List<String>> _subirImagenes({
+  Future<String> _subirImagen({
     required String carpetaDestino,
     required String nombreEquipo,
-    required List<XFile?> imagenesSeleccionadas,
-    required List<String> imagenesExistentes,
+    required XFile? imagenSeleccionada,
+    required String? imagenExistente,
   }) async {
     final storage = FirebaseStorage.instance;
-    final List<String> urls = List<String>.from(imagenesExistentes);
-    // Asegurar longitud 3
-    while (urls.length < 3) {
-      urls.add('');
+    
+    if (imagenSeleccionada != null) {
+      final ref = storage.ref().child('Equipos/$carpetaDestino/${nombreEquipo.trim()}.png');
+      UploadTask uploadTask = kIsWeb
+          ? ref.putData(await imagenSeleccionada.readAsBytes(), SettableMetadata(contentType: 'image/png'))
+          : ref.putFile(File(imagenSeleccionada.path), SettableMetadata(contentType: 'image/png'));
+      final snapshot = await uploadTask.whenComplete(() {});
+      return await snapshot.ref.getDownloadURL();
     }
-    for (int i = 0; i < 3; i++) {
-      final img = i < imagenesSeleccionadas.length ? imagenesSeleccionadas[i] : null;
-      if (img != null) {
-        final ref = storage.ref().child('Equipos/$carpetaDestino/${nombreEquipo.trim()}-$i.png');
-        UploadTask uploadTask = kIsWeb
-            ? ref.putData(await img.readAsBytes(), SettableMetadata(contentType: 'image/png'))
-            : ref.putFile(File(img.path), SettableMetadata(contentType: 'image/png'));
-        final snapshot = await uploadTask.whenComplete(() {});
-        final url = await snapshot.ref.getDownloadURL();
-        urls[i] = url;
-      }
-    }
-    // Garantizar exactamente 3
-    return urls.take(3).toList();
+    
+    // Si no hay imagen nueva, devolver la existente o cadena vacía
+    return imagenExistente ?? '';
   }
 
   void _mostrarDialogoEquipo({Map<String, dynamic>? equipo, String? docId}) {
@@ -86,10 +79,12 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
     String condicion = (equipo?['condicion'] ?? '').toString().trim();
     String estado = (equipo?['estado'] ?? '').toString().trim();
     String tipoEquipo = (equipo?['tipoEquipo'] ?? '').toString().toLowerCase().trim();
-    // Selección temporal de imágenes (ya manejada en _imagenes)
-    List<String> imagenesExistentes = equipo?['imagenes'] != null ? List<String>.from(equipo!['imagenes']) : [];
+    // Imagen existente
+    String? imagenExistente = equipo?['imagenes'] != null && (equipo!['imagenes'] as List).isNotEmpty 
+        ? (equipo['imagenes'] as List)[0].toString() 
+        : null;
     setState(() {
-      _imagenes = [null, null, null];
+      _imagen = null;
     });
 
     showDialog(
@@ -188,12 +183,10 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                           validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 16),
-                        // Imágenes
-                        Text('Imágenes (máx. 3 PNG):', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+                        // Imagen
+                        Text('Imagen (PNG):', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
                         const SizedBox(height: 8),
-                        Row(
-                          children: List.generate(3, (i) => _imagePicker(i, setStateDialog, imagenesExistentes)),
-                        ),
+                        _imagePicker(setStateDialog, imagenExistente),
                         const SizedBox(height: 16),
                         _inputField(marcaController, 'Marca', Icons.business, validator: (v) => v!.trim().isEmpty ? 'Campo requerido' : null),
                         const SizedBox(height: 16),
@@ -251,12 +244,12 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                         // Determinar carpeta destino (normalizado)
                                         final carpeta = (categoria.toLowerCase() == 'accesorios') ? 'accesorios' : 'equipos';
                                         final safeNameForPath = _sanitizePathSegment(nombreController.text);
-                                        // Subir imágenes seleccionadas (respetar existentes cuando no hay nuevas)
-                                        final urls = await _subirImagenes(
+                                        // Subir imagen seleccionada (respetar existente cuando no hay nueva)
+                                        final urlImagen = await _subirImagen(
                                           carpetaDestino: carpeta,
                                           nombreEquipo: safeNameForPath,
-                                          imagenesSeleccionadas: _imagenes,
-                                          imagenesExistentes: imagenesExistentes,
+                                          imagenSeleccionada: _imagen,
+                                          imagenExistente: imagenExistente,
                                         );
 
                                   final data = {
@@ -266,7 +259,7 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                     'condicion': condicion,
                                     'descripcion': descripcionController.text.trim(),
                                     'estado': estado,
-                                          'imagenes': urls,
+                                    'imagenes': [urlImagen], // Mantener como array para compatibilidad
                                     'marca': marcaController.text.trim(),
                                     'modelo': modeloController.text.trim(),
                                     'numero': numeroController.text.trim(),
@@ -390,9 +383,7 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
     );
   }
 
-  Widget _imagePicker(int index, void Function(void Function()) setStateDialog, List<String> imagenesExistentes) {
-    final img = _imagenes[index];
-    final existe = (imagenesExistentes.length > index) ? imagenesExistentes[index] : null;
+  Widget _imagePicker(void Function(void Function()) setStateDialog, String? imagenExistente) {
     return GestureDetector(
       onTap: () async {
         final picker = ImagePicker();
@@ -406,32 +397,39 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
             return;
           }
           setStateDialog(() {
-            _imagenes[index] = picked;
+            _imagen = picked;
           });
         }
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        width: 70,
-        height: 70,
+        width: 120,
+        height: 120,
         decoration: BoxDecoration(
           color: const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE0E7EF)),
         ),
-        child: img != null
+        child: _imagen != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: kIsWeb
-                    ? Image.network(img.path, fit: BoxFit.cover)
-                    : Image.file(File(img.path), fit: BoxFit.cover),
+                    ? Image.network(_imagen!.path, fit: BoxFit.cover)
+                    : Image.file(File(_imagen!.path), fit: BoxFit.cover),
               )
-            : existe != null
+            : imagenExistente != null && imagenExistente.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.network(existe, fit: BoxFit.cover),
+                    child: Image.network(imagenExistente, fit: BoxFit.cover),
                   )
-                : const Icon(Icons.add_photo_alternate, color: Color(0xFFF59E0B), size: 32),
+                : const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_photo_alternate, color: Color(0xFFF59E0B), size: 32),
+                      SizedBox(height: 8),
+                      Text('Añadir imagen', 
+                           style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12)),
+                    ],
+                  ),
       ),
     );
   }
@@ -477,7 +475,7 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
             }
           }
 
-          // Además, intentar borrar por búsqueda global en Equipos/{accesorios|equipos} con prefijo nombre-sanitizado-
+          // Además, intentar borrar por búsqueda global en Equipos/{accesorios|equipos} con nombre exacto
           final storage = FirebaseStorage.instance;
           final base = _sanitizePathSegment(nombre);
           for (final folder in ['accesorios', 'equipos']) {
@@ -486,7 +484,8 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
               final list = await dirRef.listAll();
               for (final item in list.items) {
                 final n = item.name.toLowerCase();
-                if (n.startsWith(base.toLowerCase() + '-') && n.endsWith('.png')) {
+                // Buscar tanto el formato anterior (nombre-0.png, nombre-1.png, etc.) como el nuevo (nombre.png)
+                if ((n.startsWith(base.toLowerCase() + '-') || n == base.toLowerCase() + '.png') && n.endsWith('.png')) {
                   try {
                     await item.delete();
                   } catch (_) {}

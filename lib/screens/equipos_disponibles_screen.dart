@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:app_comu/utils/carrito_equipos.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -309,48 +308,61 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Carrusel con bordes
+                  // Imagen principal
                   ClipRRect(
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: CarouselSlider(
-                      options: CarouselOptions(
-                        height: 250,
-                        autoPlay: true,
-                        viewportFraction: 1,
-                        enlargeCenterPage: false,
-                      ),
-                      items: () {
-                        final imagenesValidas = (equipo["imagenes"] as List)
-                            .where((img) => _esImagenValida(img?.toString()))
-                            .toList();
+                    child: Container(
+                      height: 250,
+                      width: double.infinity,
+                      child: () {
+                        final primeraImagenValida = _obtenerPrimeraImagenValida(equipo["imagenes"]);
                         
-                        if (imagenesValidas.isNotEmpty) {
-                          return imagenesValidas.map<Widget>((img) {
-                            return Image.network(img,
-                                fit: BoxFit.cover, width: double.infinity);
-                          }).toList();
+                        if (primeraImagenValida != null) {
+                          return Image.network(
+                            primeraImagenValida,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: 250,
+                                color: Colors.grey.shade100,
+                                child: const Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.image_not_supported, 
+                                         size: 80, color: Colors.grey),
+                                    SizedBox(height: 12),
+                                    Text("Sin imagen",
+                                         style: TextStyle(
+                                           fontSize: 18,
+                                           fontWeight: FontWeight.w500,
+                                           color: Colors.grey)),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
                         } else {
-                          return [
-                            Container(
-                              width: double.infinity,
-                              height: 250,
-                              color: Colors.grey.shade100,
-                              child: const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.image_not_supported, 
-                                       size: 80, color: Colors.grey),
-                                  SizedBox(height: 12),
-                                  Text("Sin imagen",
-                                       style: TextStyle(
-                                         fontSize: 18,
-                                         fontWeight: FontWeight.w500,
-                                         color: Colors.grey)),
-                                ],
-                              ),
-                            )
-                          ];
+                          return Container(
+                            width: double.infinity,
+                            height: 250,
+                            color: Colors.grey.shade100,
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.image_not_supported, 
+                                     size: 80, color: Colors.grey),
+                                SizedBox(height: 12),
+                                Text("Sin imagen",
+                                     style: TextStyle(
+                                       fontSize: 18,
+                                       fontWeight: FontWeight.w500,
+                                       color: Colors.grey)),
+                              ],
+                            ),
+                          );
                         }
                       }(),
                     ),
