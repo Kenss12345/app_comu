@@ -225,8 +225,8 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                 foregroundColor: Colors.white,
                                 textStyle: const TextStyle(fontWeight: FontWeight.w600),
                               ),
-                              icon: const Icon(Icons.save),
-                              label: Text(docId == null ? 'Registrar' : 'Guardar'),
+                              icon: Icon(docId == null ? Icons.save : Icons.edit),
+                              label: Text(docId == null ? 'Registrar' : 'Editar'),
                               onPressed: _subiendoImagenes
                                   ? null
                                   : () async {
@@ -937,7 +937,7 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                                 children: [
                                                   IconButton(
                                                     icon: const Icon(Icons.edit, color: Color(0xFFF59E0B)),
-                                                    onPressed: () => _mostrarDialogoEquipo(equipo: equipo),
+                                                    onPressed: () => _mostrarDialogoEquipo(equipo: equipo, docId: equipo['_id']),
                                                   ),
                                                   IconButton(
                                                     icon: const Icon(Icons.delete, color: Colors.red),
@@ -1013,7 +1013,7 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
                                               IconButton(
                                                 icon: const Icon(Icons.edit, color: Color(0xFFF59E0B)),
                                                 tooltip: 'Editar',
-                                                onPressed: () => _mostrarDialogoEquipo(equipo: e),
+                                                onPressed: () => _mostrarDialogoEquipo(equipo: e, docId: e['_id']),
                                               ),
                                               IconButton(
                                                 icon: const Icon(Icons.delete, color: Colors.red),
