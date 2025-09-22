@@ -2,8 +2,11 @@ import 'package:app_comu/main.dart';
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:app_comu/screens/gestor_login_screen.dart';
+import 'package:app_comu/screens/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -61,9 +64,54 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // FUNCIÓN COMENTADA: Formulario de datos adicionales para registro
-  // Se mantiene comentada por si se requieren cambios futuros en los requerimientos
-  /*
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Términos y Condiciones"),
+          content: const SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Al registrarte en esta aplicación, aceptas que recopilaremos y almacenaremos "
+                  "los siguientes datos personales:\n",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text("- Nombres y Apellidos"),
+                Text("- Correo Electrónico"),
+                Text("- DNI"),
+                Text("- Número de Celular"),
+                Text("- Ubicación en tiempo real (si es necesario para la función de préstamos)"),
+                SizedBox(height: 10),
+                Text(
+                  "Uso de la Ubicación:",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  "Tu ubicación será utilizada únicamente para verificar la localización de los equipos prestados "
+                  "y mejorar la seguridad de los préstamos. No se compartirá con terceros.",
+                ),
+                SizedBox(height: 10),
+                Text(
+                  "Si no estás de acuerdo con estas condiciones, por favor no continúes con el registro.",
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cerrar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _mostrarFormularioDatosAdicionales(User user) async {
     final TextEditingController dniController = TextEditingController();
     final TextEditingController celularController = TextEditingController();
@@ -102,8 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => showTermsDialog(
-                              context), // ya definida en register_screen.dart, reutilizable
+                          onTap: () => _showTermsDialog(), // Usar función local
                           child: const Text(
                             "Acepto los términos y condiciones.",
                             style: TextStyle(fontSize: 14),
@@ -155,10 +202,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   });
 
                   Navigator.pop(context);
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const ProfileScreen()),
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const AuthWrapper()),
+                    (route) => false,
                   );
                 },
               ),
@@ -168,11 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
       },
     );
   }
-  */
 
-  // FUNCIÓN COMENTADA: Inicio de sesión con Google
-  // Se mantiene comentada por si se requieren cambios futuros en los requerimientos
-  /*
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
 
@@ -254,7 +296,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-  */
 
   @override
   Widget build(BuildContext context) {
@@ -324,9 +365,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     : const Text("Iniciar Sesión"),
               ),
 
-              // BOTONES COMENTADOS: Registro manual y Google
-              // Se mantienen comentados por si se requieren cambios futuros en los requerimientos
-              /*
               const SizedBox(height: 10),
               OutlinedButton(
                 onPressed: () {
@@ -342,6 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text("Registrarse"),
               ),
 
+              const SizedBox(height: 10),
               OutlinedButton.icon(
                 icon: Image.asset('assets/google_logo.png', height: 24),
                 label: const Text("Iniciar sesión con Google"),
@@ -352,7 +391,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 onPressed: _isLoading ? null : _signInWithGoogle,
               ),
-              */
 
               const SizedBox(height: 20),
               GestureDetector(
