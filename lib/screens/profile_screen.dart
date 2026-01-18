@@ -35,30 +35,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex], // Cambia entre las pantallas según el índice
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Colors.orange.shade700,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed, // Mantiene los íconos visibles siempre
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.devices),
-            label: 'Equipos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'A cargo',
-          ),
-
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 768;
+        
+        if (isMobile) {
+          // Layout móvil: mantener BottomNavigationBar
+          return Scaffold(
+            body: _screens[_selectedIndex],
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: _onItemTapped,
+              selectedItemColor: Colors.orange.shade700,
+              unselectedItemColor: Colors.grey,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Perfil',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.devices),
+                  label: 'Equipos',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.assignment),
+                  label: 'A cargo',
+                ),
+              ],
+            ),
+          );
+        } else {
+          // Layout web/tablet: NavigationRail lateral
+          return Scaffold(
+            body: Row(
+              children: [
+                // Barra lateral de navegación
+                NavigationRail(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: _onItemTapped,
+                  labelType: NavigationRailLabelType.all,
+                  backgroundColor: Colors.white,
+                  selectedIconTheme: IconThemeData(
+                    color: Colors.orange.shade700,
+                    size: 28,
+                  ),
+                  selectedLabelTextStyle: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedIconTheme: const IconThemeData(
+                    color: Colors.grey,
+                    size: 24,
+                  ),
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.person_outline),
+                      selectedIcon: Icon(Icons.person),
+                      label: Text('Perfil'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.devices_outlined),
+                      selectedIcon: Icon(Icons.devices),
+                      label: Text('Equipos'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.assignment_outlined),
+                      selectedIcon: Icon(Icons.assignment),
+                      label: Text('A cargo'),
+                    ),
+                  ],
+                ),
+                const VerticalDivider(thickness: 1, width: 1),
+                // Contenido principal
+                Expanded(
+                  child: _screens[_selectedIndex],
+                ),
+              ],
+            ),
+          );
+        }
+      },
     );
   }
 }
@@ -319,10 +376,15 @@ class _ProfileContentState extends State<ProfileContent> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _isEditing ? _updateUserData : () async {
-                      // Desconecta la sesión de Google
-                      final googleSignIn = GoogleSignIn();
-                      if (await googleSignIn.isSignedIn()) {
-                        await googleSignIn.signOut();
+                      try {
+                        // Desconecta la sesión de Google
+                        final googleSignIn = GoogleSignIn();
+                        if (await googleSignIn.isSignedIn()) {
+                          await googleSignIn.signOut();
+                        }
+                      } catch (e) {
+                        // Si falla Google Sign In (ej: no configurado en web), continuamos
+                        print('Error al cerrar sesión de Google: $e');
                       }
                       // Cierra la sesión de Firebase
                       await FirebaseAuth.instance.signOut();

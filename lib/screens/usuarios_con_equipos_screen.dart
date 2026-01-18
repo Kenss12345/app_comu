@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // si usas Google Sign-In
 import '../main.dart';
+import '../utils/responsive_breakpoints.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -210,8 +211,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 768;
-        final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+        final isMobile = ResponsiveBreakpoints.isMobile(context);
+        final isTablet = ResponsiveBreakpoints.isTablet(context);
         
         return Stack(
           children: [
@@ -747,10 +748,15 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
   // Método para cerrar sesión
   Future<void> _cerrarSesion() async {
-    // Desconectar Google (si procede)
-    final googleSignIn = GoogleSignIn();
-    if (await googleSignIn.isSignedIn()) {
-      await googleSignIn.signOut();
+    try {
+      // Desconectar Google (si procede)
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+      }
+    } catch (e) {
+      // Si falla Google Sign In (ej: no configurado en web), continuamos
+      print('Error al cerrar sesión de Google: $e');
     }
 
     // Cerrar sesión de Firebase

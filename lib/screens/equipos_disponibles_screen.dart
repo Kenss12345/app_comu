@@ -25,6 +25,14 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
   List<Map<String, dynamic>> equipos = [];
   final List<Map<String, dynamic>> equiposACargo = [];
 
+  // Función para normalizar nombres de equipos eliminando sufijos numéricos
+  String _normalizarNombreEquipo(String nombre) {
+    // Elimina patrones como " 01", " 02", " 1", " 2", etc. al final del nombre
+    // También maneja casos como "-01", "-02", "_01", "_02"
+    final patron = RegExp(r'[\s\-_]+\d{1,3}$');
+    return nombre.replaceAll(patron, '').trim();
+  }
+
   // Función para validar si una URL de imagen es válida
   bool _esImagenValida(String? url) {
     if (url == null || url.trim().isEmpty) return false;
@@ -288,6 +296,157 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
     }
   }
 
+  // Muestra las unidades disponibles de un equipo agrupado
+  void _mostrarUnidadesDisponibles(BuildContext context, List<Map<String, dynamic>> unidades) {
+    // Filtrar solo las disponibles
+    final disponibles = unidades.where((e) => e["estado"] == "Disponible").toList();
+    
+    if (disponibles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No hay unidades disponibles en este momento")),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${unidades[0]["nombre"]} - Unidades disponibles",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "${disponibles.length} unidad${disponibles.length != 1 ? 'es' : ''} disponible${disponibles.length != 1 ? 's' : ''}",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: disponibles.length,
+                      itemBuilder: (context, index) {
+                        final equipo = disponibles[index];
+                        return Card(
+                          elevation: 2,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _mostrarDetalles(context, equipo),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: () {
+                                      final primeraImagenValida = 
+                                          _obtenerPrimeraImagenValida(equipo["imagenes"]);
+                                      
+                                      if (primeraImagenValida != null) {
+                                        return Image.network(
+                                          primeraImagenValida,
+                                          width: 60,
+                                          height: 60,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Container(
+                                              width: 60,
+                                              height: 60,
+                                              color: Colors.grey.shade100,
+                                              child: const Icon(
+                                                Icons.image_not_supported,
+                                                size: 24,
+                                                color: Colors.grey,
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        return Container(
+                                          width: 60,
+                                          height: 60,
+                                          color: Colors.grey.shade100,
+                                          child: const Icon(
+                                            Icons.image_not_supported,
+                                            size: 24,
+                                            color: Colors.grey,
+                                          ),
+                                        );
+                                      }
+                                    }(),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          equipo["nombre"] ?? "Sin nombre",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          equipo["descripcion"] ?? "",
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _mostrarDetalles(BuildContext context, Map<String, dynamic> equipo) {
     showModalBottomSheet(
       context: context,
@@ -434,7 +593,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                     const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                ),
+                                  ),
                                 textStyle: const TextStyle(fontSize: 16),
                               ),
                             ),
@@ -500,11 +659,26 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
       return coincideBusqueda && coincideCategoria && coincideDisponibilidad;
     }).toList();
 
-    Map<String, List<Map<String, dynamic>>> categoriasAgrupadas = {};
+    // Agrupar por nombre de equipo en lugar de mostrar uno por uno
+    Map<String, List<Map<String, dynamic>>> equiposAgrupados = {};
+    for (var equipo in equiposFiltrados) {
+      // Usar nombre normalizado para agrupar
+      final nombreNormalizado = _normalizarNombreEquipo(equipo["nombre"]);
+      equiposAgrupados[nombreNormalizado] = equiposAgrupados[nombreNormalizado] ?? [];
+      equiposAgrupados[nombreNormalizado]!.add(equipo);
+    }
+
+    // Ahora agrupa por categoría los nombres de equipos
+    Map<String, Map<String, List<Map<String, dynamic>>>> categoriasAgrupadas = {};
     for (var equipo in equiposFiltrados) {
       final categoria = equipo["categoria"];
-      categoriasAgrupadas[categoria] = categoriasAgrupadas[categoria] ?? [];
-      categoriasAgrupadas[categoria]!.add(equipo);
+      // Usar nombre normalizado para agrupar
+      final nombreNormalizado = _normalizarNombreEquipo(equipo["nombre"]);
+      
+      categoriasAgrupadas[categoria] = categoriasAgrupadas[categoria] ?? {};
+      categoriasAgrupadas[categoria]![nombreNormalizado] = 
+          categoriasAgrupadas[categoria]![nombreNormalizado] ?? [];
+      categoriasAgrupadas[categoria]![nombreNormalizado]!.add(equipo);
     }
 
     return Stack(
@@ -606,7 +780,20 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                     ),
                                   ),
                                 ),
-                                ...categoria.value.map((equipo) {
+                                // Ahora iteramos sobre los nombres de equipos agrupados
+                                ...categoria.value.entries.map((equipoEntry) {
+                                  final nombreEquipo = equipoEntry.key;
+                                  final unidades = equipoEntry.value;
+                                  
+                                  // Contar unidades disponibles
+                                  final disponibles = unidades
+                                      .where((e) => e["estado"] == "Disponible")
+                                      .length;
+                                  final total = unidades.length;
+                                  
+                                  // Tomar la primera unidad como referencia para datos comunes
+                                  final equipoRef = unidades.first;
+                                  
                                   return Card(
                                     elevation: 3,
                                     margin:
@@ -616,8 +803,18 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                             BorderRadius.circular(12)),
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(12),
-                                      onTap: () =>
-                                          _mostrarDetalles(context, equipo),
+                                      onTap: () {
+                                        // Si hay unidades disponibles, mostrar el diálogo de selección
+                                        if (disponibles > 0) {
+                                          _mostrarUnidadesDisponibles(context, unidades);
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text("No hay unidades disponibles"),
+                                            ),
+                                          );
+                                        }
+                                      },
                                       child: Padding(
                                         padding: const EdgeInsets.all(12),
                                         child: Row(
@@ -627,7 +824,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                                   BorderRadius.circular(10),
                                               child: () {
                                                 final primeraImagenValida = 
-                                                    _obtenerPrimeraImagenValida(equipo["imagenes"]);
+                                                    _obtenerPrimeraImagenValida(equipoRef["imagenes"]);
                                                 
                                                 if (primeraImagenValida != null) {
                                                   return Image.network(
@@ -684,7 +881,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                                     children: [
                                                       Expanded(
                                                         child: Text(
-                                                          equipo["nombre"],
+                                                          nombreEquipo,
                                                           style:
                                                               const TextStyle(
                                                             fontSize: 16,
@@ -693,7 +890,7 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                                           ),
                                                         ),
                                                       ),
-                                                      if (equipo["tipoEquipo"] ==
+                                                      if (equipoRef["tipoEquipo"] ==
                                                               "premium" &&
                                                           (_puntosUsuario ??
                                                                   0) >=
@@ -705,55 +902,48 @@ class _EquiposDisponiblesScreenState extends State<EquiposDisponiblesScreen> {
                                                   ),
                                                   const SizedBox(height: 4),
                                                   Text(
-                                                    equipo["descripcion"],
+                                                    equipoRef["descripcion"],
                                                     maxLines: 2,
                                                     overflow:
                                                         TextOverflow.ellipsis,
                                                     style: const TextStyle(
                                                         color: Colors.black54),
                                                   ),
+                                                  const SizedBox(height: 6),
+                                                  // Mostrar cantidad disponible
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.inventory_2_outlined,
+                                                        size: 14,
+                                                        color: disponibles > 0 
+                                                            ? Colors.green.shade700
+                                                            : Colors.grey,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        disponibles > 0
+                                                            ? "$disponibles disponible${disponibles != 1 ? 's' : ''} de $total"
+                                                            : "No disponible ($total en total)",
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: disponibles > 0 
+                                                              ? Colors.green.shade700
+                                                              : Colors.grey,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ],
                                               ),
                                             ),
                                             const SizedBox(width: 10),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Chip(
-                                                  label: Text(
-                                                    equipo["estado"],
-                                                    style: const TextStyle(
-                                                        color: Colors.white),
-                                                  ),
-                                                  backgroundColor:
-                                                      equipo["estado"] ==
-                                                              "Disponible"
-                                                          ? Colors.green
-                                                          : equipo["estado"] ==
-                                                                  "En Uso"
-                                                              ? Colors.orange
-                                                              : Colors.red,
-                                                ),
-                                                // Solo muestra el tiempo si está en uso y tiene fecha_devolucion
-                                                if (equipo["estado"] ==
-                                                        "En Uso" &&
-                                                    equipo["fecha_devolucion"] !=
-                                                        null)
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 4),
-                                                    child: Text(
-                                                      "Días restantes: ${calcularTiempoRestante(equipo["fecha_devolucion"])}",
-                                                      style: const TextStyle(
-                                                          fontSize: 13,
-                                                          color: Colors.orange,
-                                                          fontWeight:
-                                                              FontWeight.bold),
-                                                    ),
-                                                  ),
-                                              ],
+                                            Icon(
+                                              Icons.chevron_right,
+                                              color: disponibles > 0 
+                                                  ? Colors.orange.shade600
+                                                  : Colors.grey.shade400,
                                             ),
                                           ],
                                         ),

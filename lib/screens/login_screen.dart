@@ -1,5 +1,6 @@
 import 'package:app_comu/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -219,32 +220,55 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      UserCredential userCredential;
 
-      if (googleUser == null) {
-        // Cancelado por el usuario
-        setState(() => _isLoading = false);
-        return;
+      if (kIsWeb) {
+        // === PARA WEB: Usar Firebase Auth directamente ===
+        GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.setCustomParameters({
+          'hd': 'continental.edu.pe', // Restricción de dominio en el popup
+        });
+
+        // Login con popup (o redirect si prefieres)
+        userCredential = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+        
+        // Verificar que el correo sea institucional (por seguridad adicional)
+        if (userCredential.user?.email == null || 
+            !userCredential.user!.email!.endsWith('@continental.edu.pe')) {
+          await FirebaseAuth.instance.signOut();
+          _showError("Solo se permite el acceso con el correo institucional.");
+          setState(() => _isLoading = false);
+          return;
+        }
+      } else {
+        // === PARA MÓVIL: Usar google_sign_in ===
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+        if (googleUser == null) {
+          // Cancelado por el usuario
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        // Verifica que el correo sea institucional
+        if (!googleUser.email.endsWith('@continental.edu.pe')) {
+          await googleSignIn.signOut();
+          _showError("Solo se permite el acceso con el correo institucional.");
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Inicia sesión con Firebase
+        userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       }
-
-      // Verifica que el correo sea institucional
-      if (!googleUser.email.endsWith('@continental.edu.pe')) {
-        await GoogleSignIn().signOut();
-        _showError("Solo se permite el acceso con el correo institucional.");
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Inicia sesión con Firebase
-      final UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
 
       // Guarda los datos en Firestore si el usuario es nuevo
       final user = userCredential.user;
@@ -300,116 +324,188 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset('assets/UC.png', width: 150), // Logo
-              const SizedBox(height: 20),
-              const Text(
-                "Inicio de Sesión",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 768;
+          
+          if (isMobile) {
+            // Layout móvil: diseño vertical
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: _buildLoginForm(isMobile),
               ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Correo Electrónico',
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+            );
+          } else {
+            // Layout web: dos columnas (ilustración + formulario)
+            return Row(
+              children: [
+                // Columna izquierda: ilustración/banner
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.orange.shade700,
+                          Colors.orange.shade500,
+                          Colors.orange.shade300,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset('assets/UC.png', width: 250),
+                          const SizedBox(height: 30),
+                          const Text(
+                            'Sistema de Préstamo\nde Equipos',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Universidad Continental',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    // Aquí puedes agregar la navegación a la pantalla de recuperación de contraseña
-                  },
-                  child: const Text("¿Olvidaste tu contraseña?"),
+                // Columna derecha: formulario
+                Expanded(
+                  flex: 1,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 24),
+                      child: _buildLoginForm(isMobile),
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
 
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Iniciar Sesión"),
-              ),
-
-              const SizedBox(height: 10),
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const RegisterScreen()),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: const Text("Registrarse"),
-              ),
-
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                icon: Image.asset('assets/google_logo.png', height: 24),
-                label: const Text("Iniciar sesión con Google"),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                  side: const BorderSide(color: Colors.black),
-                  foregroundColor: Colors.black,
-                ),
-                onPressed: _isLoading ? null : _signInWithGoogle,
-              ),
-
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const GestorLoginScreen()),
-                  );
-                },
-                child: const Text(
-                  "Acceder como Gestor de Equipos",
-                  style: TextStyle(
-                      color: Colors.blue, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
+  Widget _buildLoginForm(bool isMobile) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 450),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isMobile) ...[
+            Image.asset('assets/UC.png', width: 150),
+            const SizedBox(height: 20),
+          ],
+          const Text(
+            "Inicio de Sesión",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
-        ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'Correo Electrónico',
+              prefixIcon: Icon(Icons.person),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: 'Contraseña',
+              prefixIcon: const Icon(Icons.lock),
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                // Recuperación de contraseña
+              },
+              child: const Text("¿Olvidaste tu contraseña?"),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _isLoading ? null : _login,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            child: _isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text("Iniciar Sesión"),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RegisterScreen()),
+              );
+            },
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            child: const Text("Registrarse"),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            icon: Image.asset('assets/google_logo.png', height: 24),
+            label: const Text("Iniciar sesión con Google"),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+              side: const BorderSide(color: Colors.black),
+              foregroundColor: Colors.black,
+            ),
+            onPressed: _isLoading ? null : _signInWithGoogle,
+          ),
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GestorLoginScreen()),
+              );
+            },
+            child: const Text(
+              "Acceder como Gestor de Equipos",
+              style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }

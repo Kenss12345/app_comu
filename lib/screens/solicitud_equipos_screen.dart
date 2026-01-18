@@ -6,9 +6,6 @@ import 'package:app_comu/utils/carrito_equipos.dart';
 import 'package:intl/intl.dart';
 import 'package:app_comu/utils/temporizador_reserva.dart';
 
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server/gmail.dart';
-
 List<Map<String, dynamic>> equiposSeleccionados = CarritoEquipos().equipos;
 
 class SolicitudEquiposScreen extends StatefulWidget {
@@ -23,7 +20,6 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
 
   // Datos del usuario
   String nombreUsuario = "";
-  String apellidosUsuario = "";
   String dniUsuario = "";
   String tipoUsuario = "";
   String celularUsuario = "";
@@ -241,7 +237,6 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
       if (userDoc.exists) {
         setState(() {
           nombreUsuario = userDoc["nombre"] ?? "";
-          apellidosUsuario = userDoc["apellidos"] ?? "";
           celularUsuario = userDoc["celular"] ?? "";
           emailUsuario = userDoc["email"] ?? "";
           dniUsuario = userDoc["dni"] ?? "";
@@ -321,7 +316,6 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
         await FirebaseFirestore.instance.collection('solicitudes').add({
           'uid': user.uid,
           'nombre': nombreUsuario,
-          'apellidos': apellidosUsuario,
           'email': emailUsuario,
           'dni': dniUsuario,
           'celular': celularUsuario,
@@ -355,8 +349,8 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           });
         }
 
-        // Enviar correo al usuario
-        await _enviarCorreoConfirmacion(emailUsuario, equipos, integrantes);
+        // El correo se enviará automáticamente mediante Cloud Function
+        // cuando se detecte la nueva solicitud en Firestore
 
         // Solo muestra el mensaje de éxito cuando todo termina
         if (mounted) {
@@ -376,67 +370,6 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
       }
     } finally {
       if (mounted) setState(() => _enviando = false);
-    }
-  }
-
-  Future<void> _enviarCorreoConfirmacion(
-      String destinatario, List<Map<String, dynamic>> equipos, List<String> integrantes) async {
-    // Usa tu correo institucional o de servicio habilitado para SMTP
-    String username = 'kenss12345@gmail.com';
-    String password = 'qsex cejw glnq namr';
-
-    final smtpServer = gmail(username, password);
-
-    // Construye el contenido de los equipos solicitados
-    String contenidoEquipos = equipos
-        .map((e) => "- ${e['nombre']} (${e['estado_prestamo']})")
-        .join("\n");
-
-    // Construye integrantes
-    String contenidoIntegrantes = integrantes.isEmpty
-        ? 'No especificado'
-        : integrantes.asMap().entries
-            .map((e) => "${e.key + 1}. ${e.value}")
-            .join("\n");
-
-    // Construye el contenido del mensaje
-    final message = Message()
-      ..from = Address(username, 'Soporte Audiovisual')
-      ..recipients.add(destinatario)
-      ..subject = 'Confirmación de solicitud de préstamo'
-      ..text = '''
-    Hola $nombreUsuario,
-
-    Tu solicitud de préstamo ha sido registrada con éxito.
-
-    Detalles de tu solicitud:
-    - Fecha de entrega: $fechaPrestamo
-    - Fecha de devolución: $fechaDevolucion
-    - Asignatura: ${asignaturaSeleccionada ?? ''}
-    - Curso: ${cursoController.text}
-    - Docente: ${docenteController.text}
-    - Nombre de grupo: ${nombreGrupoController.text}
-    - Semestre: ${semestreController.text}
-    - NRC: ${nrcController.text}
-    - Cantidad de integrantes: ${cantidadIntegrantesSeleccionada ?? 0}
-    - Integrantes:\n$contenidoIntegrantes
-    - Lugar de Trabajo: ${lugarController.text}
-    - Trabajo a Realizar: ${trabajoController.text}
-
-  Equipos solicitados:
-  $contenidoEquipos
-
-  Gracias por usar nuestro sistema.
-
-  Atentamente,
-  Soporte Audiovisual
-  ''';
-
-    try {
-      final sendReport = await send(message, smtpServer);
-      print('Correo enviado: ' + sendReport.toString());
-    } on MailerException catch (e) {
-      print('Fallo al enviar correo: $e');
     }
   }
 
@@ -486,12 +419,8 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
                               title: "Datos del Estudiante",
                               children: [
                                 _buildTextField(
-                                    label: "Nombre",
+                                    label: "Nombre Completo",
                                     initialValue: nombreUsuario,
-                                    enabled: false),
-                                _buildTextField(
-                                    label: "Apellidos",
-                                    initialValue: apellidosUsuario,
                                     enabled: false),
                                 _buildTextField(
                                     label: "DNI",

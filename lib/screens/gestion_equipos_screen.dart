@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
+import '../utils/responsive_breakpoints.dart';
 
 class GestionEquiposScreen extends StatefulWidget {
   const GestionEquiposScreen({Key? key}) : super(key: key);
@@ -512,8 +513,8 @@ class _GestionEquiposScreenState extends State<GestionEquiposScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 768;
-        final isTablet = constraints.maxWidth >= 768 && constraints.maxWidth < 1200;
+        final isMobile = ResponsiveBreakpoints.isMobile(context);
+        final isTablet = ResponsiveBreakpoints.isTablet(context);
         
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFC),
