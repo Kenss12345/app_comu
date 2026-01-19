@@ -103,7 +103,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   }
 
   // EmailJS - Configuración (rellenar con tus valores reales)
-  static const String _emailJsServiceId = 'service_g9z5wq1';
+  static const String _emailJsServiceId = 'service_ie42h1t';
   static const String _emailJsTemplateIdSolicitudEstado = 'template_vprkgmd';
   static const String _emailJsPublicKey = '1YM2-UMljnkfRuBmm';
 
@@ -140,9 +140,8 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
       'user_id': _emailJsPublicKey,
       'template_params': {
         'to_email': destinatario,
-        'to_name': '${solicitud['nombre'] ?? ''} ${solicitud['apellidos'] ?? ''}',
+        'to_name': solicitud['nombre'] ?? '',
         'nombre': solicitud['nombre'] ?? '',
-        'apellidos': solicitud['apellidos'] ?? '',
         'dni': (solicitud['dni'] ?? '').toString(),
         'asignatura': solicitud['asignatura'] ?? '',
         'trabajo': solicitud['trabajo'] ?? '',
@@ -1298,7 +1297,11 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                 ),
               ],
             ),
-            child: Row(
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              alignment: WrapAlignment.start,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 // Filtro por nombre - más compacto
                 SizedBox(
@@ -1329,7 +1332,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
                 // Filtro por DNI
                 SizedBox(
                   width: 180,
@@ -1360,7 +1362,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
                 // Switch de ordenamiento
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1498,7 +1499,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                     : Align(
                         alignment: Alignment.topCenter,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1100),
+                          constraints: const BoxConstraints(maxWidth: 1400),
                           child: Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -1511,188 +1512,212 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                             ),
                           ],
                         ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: DataTable(
-                            columnSpacing: 24,
-                            headingRowColor: MaterialStateProperty.resolveWith<Color?>(
-                              (states) => Colors.orange.shade50,
-                            ),
-                            dataRowColor: MaterialStateProperty.resolveWith<Color?>(
-                              (states) => Colors.white,
-                            ),
-                            border: TableBorder.all(
-                              color: Colors.grey.shade200,
-                              width: 1,
-                            ),
-                            columns: [
-                              DataColumn(
-                                label: Text(
-                                  "Solicitante",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade800,
-                                  ),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Detectar si es pantalla pequeña para ajustar el espaciado
+                            final isSmallScreen = constraints.maxWidth < 1200;
+                            final columnSpacing = isSmallScreen ? 12.0 : 24.0;
+
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: constraints.maxWidth > 1200 ? constraints.maxWidth : 1200,
                                 ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                      "DNI",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey.shade800,
-                                      ),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.vertical,
+                                  child: DataTable(
+                                    columnSpacing: columnSpacing,
+                                    headingRowColor: MaterialStateProperty.resolveWith<Color?>(
+                                      (states) => Colors.orange.shade50,
                                     ),
-                                  ),
-                                  DataColumn(
-                                    label: Text(
-                                      "Equipo(s)",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  "Fecha solicitud",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                              ),
-                                  DataColumn(
-                                    label: Text(
-                                      "Fecha devolución",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  "Acciones",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            rows: solicitudes.map<DataRow>((solicitud) {
-                              final data = solicitud.data() as Map<String, dynamic>;
-                              final nombre = data['nombre'] ?? '---';
-                                  final dni = (data['dni'] ?? '---').toString();
-                                  final equiposList = (data['equipos'] as List?) ?? [];
-                                  final equiposTexto = equiposList.isEmpty
-                                      ? '---'
-                                      : equiposList.map((e) => (e['nombre'] ?? '---').toString()).join(', ');
-                              final fechaEnvio = data['fecha_envio'] is Timestamp
-                                  ? DateFormat('dd/MM/yyyy').format(
-                                      (data['fecha_envio'] as Timestamp).toDate())
-                                  : '---';
-                                  final fechaDev = data['fecha_devolucion'];
-                                  String fechaDevStr = '---';
-                                  if (fechaDev is Timestamp) {
-                                    fechaDevStr = DateFormat('dd/MM/yyyy').format(fechaDev.toDate());
-                                  } else if (fechaDev is String) {
-                                    fechaDevStr = fechaDev;
-                                  }
-                              return DataRow(
-                                cells: [
-                                  DataCell(
-                                    Text(
-                                      nombre,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade800,
-                                      ),
+                                    dataRowColor: MaterialStateProperty.resolveWith<Color?>(
+                                      (states) => Colors.white,
                                     ),
-                                  ),
-                                  DataCell(
-                                    Text(
-                                          dni,
+                                    border: TableBorder.all(
+                                      color: Colors.grey.shade200,
+                                      width: 1,
+                                    ),
+                                    columns: [
+                                      DataColumn(
+                                        label: Text(
+                                          "Solicitante",
                                           style: TextStyle(
-                                            color: Colors.grey.shade700,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade800,
                                           ),
                                         ),
                                       ),
-                                      DataCell(
-                                        Text(
-                                          equiposTexto,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Text(
-                                      fechaEnvio,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                      DataCell(
-                                        Text(
-                                          fechaDevStr,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.shade100,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: IconButton(
-                                            icon: Icon(Icons.visibility, color: Colors.blue.shade700),
-                                            tooltip: "Visualizar",
-                                            onPressed: () => _mostrarDetallesSolicitud(context, solicitud),
+                                      DataColumn(
+                                        label: Text(
+                                          "DNI",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade800,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.green.shade100,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: IconButton(
-                                            icon: Icon(Icons.check_circle, color: Colors.green.shade700),
-                                            tooltip: "Aceptar",
-                                            onPressed: () => _gestionarSolicitud(solicitud, "Aceptada"),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "Equipo(s)",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade800,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.red.shade100,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: IconButton(
-                                            icon: Icon(Icons.cancel, color: Colors.red.shade700),
-                                            tooltip: "Rechazar",
-                                            onPressed: () => _gestionarSolicitud(solicitud, "Rechazada"),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          isSmallScreen ? "F. Solicitud" : "Fecha solicitud",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade800,
                                           ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          isSmallScreen ? "F. Devolución" : "Fecha devolución",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          "Acciones",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    rows: solicitudes.map<DataRow>((solicitud) {
+                                      final data = solicitud.data() as Map<String, dynamic>;
+                                      final nombre = data['nombre'] ?? '---';
+                                      final dni = (data['dni'] ?? '---').toString();
+                                      final equiposList = (data['equipos'] as List?) ?? [];
+                                      final equiposTexto = equiposList.isEmpty
+                                          ? '---'
+                                          : equiposList.map((e) => (e['nombre'] ?? '---').toString()).join(', ');
+                                      final fechaEnvio = data['fecha_envio'] is Timestamp
+                                          ? DateFormat('dd/MM/yyyy').format(
+                                              (data['fecha_envio'] as Timestamp).toDate())
+                                          : '---';
+                                      final fechaDev = data['fecha_devolucion'];
+                                      String fechaDevStr = '---';
+                                      if (fechaDev is Timestamp) {
+                                        fechaDevStr = DateFormat('dd/MM/yyyy').format(fechaDev.toDate());
+                                      } else if (fechaDev is String) {
+                                        fechaDevStr = fechaDev;
+                                      }
+                                      return DataRow(
+                                        cells: [
+                                          DataCell(
+                                            Text(
+                                              nombre,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.grey.shade800,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              dni,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Tooltip(
+                                              message: equiposTexto,
+                                              child: SizedBox(
+                                                width: 200, // Limitar ancho de la columna
+                                                child: Text(
+                                                  equiposTexto,
+                                                  style: TextStyle(
+                                                    color: Colors.grey.shade700,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              fechaEnvio,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Text(
+                                              fechaDevStr,
+                                              style: TextStyle(
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                          DataCell(
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blue.shade100,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.visibility, color: Colors.blue.shade700),
+                                                    tooltip: "Visualizar",
+                                                    onPressed: () => _mostrarDetallesSolicitud(context, solicitud),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green.shade100,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.check_circle, color: Colors.green.shade700),
+                                                    tooltip: "Aceptar",
+                                                    onPressed: () => _gestionarSolicitud(solicitud, "Aceptada"),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red.shade100,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.cancel, color: Colors.red.shade700),
+                                                    tooltip: "Rechazar",
+                                                    onPressed: () => _gestionarSolicitud(solicitud, "Rechazada"),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
                                   ),
-                                ],
-                              );
-                            }).toList(),
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
-                      );
+                      ),
+                    ),
+                  );
               },
             ),
           ),
@@ -1916,7 +1941,6 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                     ]),
                     const SizedBox(height: 16),
                     _infoRow('Solicitante', (data['nombre'] ?? '---').toString(), icon: Icons.person),
-                    _infoRow('Apellidos', (data['apellidos'] ?? '---').toString(), icon: Icons.person_outline),
                     _infoRow('DNI', (data['dni'] ?? '---').toString(), icon: Icons.credit_card),
                     _infoRow('Email', (data['email'] ?? '---').toString(), icon: Icons.email),
                     _infoRow('Celular', (data['celular'] ?? '---').toString(), icon: Icons.phone),
