@@ -682,7 +682,7 @@ class _ProfileContentState extends State<ProfileContent> {
                         const SizedBox(height: 8),
                         Text('• Con 0 puntos no podrás solicitar equipos', style: TextStyle(fontSize: 14)),
                         Text('• Con 20 puntos tendrás acceso a equipos premium', style: TextStyle(fontSize: 14)),
-                        Text('• Los puntos se ganan/perden según el uso responsable', style: TextStyle(fontSize: 14)),
+                        Text('• Los puntos se ganan/pierden según el uso responsable', style: TextStyle(fontSize: 14)),
                       ],
                     ),
                   ),

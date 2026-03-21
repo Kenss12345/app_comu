@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'gestion_equipos_screen.dart';
+import 'dashboard_screen.dart';
 
 class UsuariosConEquiposScreen extends StatefulWidget {
   const UsuariosConEquiposScreen({super.key});
@@ -29,7 +30,7 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
   bool _procesandoSolicitud = false;
   String filtroNombreSolicitante = "";
   bool ordenarRecientesPrimero = true;
-  int _selectedSection = 0; // 0: Usuarios, 1: Solicitudes, 2: Gestionar Estudiantes, 3: Gestionar Equipos
+  int _selectedSection = 0; // 0: Usuarios, 1: Solicitudes, 2: Gestionar Estudiantes, 3: Gestionar Equipos, 4: Dashboard
   bool _sidebarCollapsed = false; // Controla si el panel lateral está colapsado
   final ScrollController _sidebarScrollController = ScrollController();
 
@@ -324,7 +325,9 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                                         ? _buildSolicitudesTab()
                                         : _selectedSection == 2
                                             ? const GestionEstudiantesScreen()
-                                            : GestionEquiposScreen(),
+                                            : _selectedSection == 3
+                                                ? GestionEquiposScreen()
+                                                : const DashboardScreen(),
                               ),
                             ),
                           ),
@@ -545,6 +548,14 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
                   selected: _selectedSection == 3,
                   collapsed: _sidebarCollapsed,
                   onTap: () => setState(() => _selectedSection = 3),
+                ),
+                const SizedBox(height: 12),
+                _SidebarButton(
+                  icon: Icons.bar_chart,
+                  label: 'Reportes y Dashboard',
+                  selected: _selectedSection == 4,
+                  collapsed: _sidebarCollapsed,
+                  onTap: () => setState(() => _selectedSection = 4),
                 ),
               ],
             ),
