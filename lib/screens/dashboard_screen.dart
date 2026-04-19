@@ -14,20 +14,21 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final EstadisticasService _estadisticasService = EstadisticasService();
-  
+
   // Filtros temporales
   String _filtroSeleccionado = '7'; // '1', '7', '30', 'custom'
   DateTime _fechaInicio = DateTime.now().subtract(const Duration(days: 7));
   DateTime _fechaFin = DateTime.now();
-  
+
   // Datos cargados
   bool _cargando = true;
-  Map<String, int> _estadisticasSolicitudes = {};
-  int _equiposPrestados = 0;
+  int _solicitadas = 0;
+  int _aceptadas = 0;
+  int _rechazadas = 0;
+  int _devueltos = 0;
   Map<String, int> _equiposMasSolicitados = {};
   Map<String, int> _asignaturas = {};
   Map<String, int> _prestamosPorDia = {};
-  int _equiposDevueltos = 0;
 
   @override
   void initState() {
@@ -37,37 +38,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _cargarDatos() async {
     setState(() => _cargando = true);
-
     try {
-      // Obtener solicitudes en el rango
-      final solicitudes = await _estadisticasService.obtenerSolicitudesRango(
-        _fechaInicio,
-        _fechaFin,
-      );
-
-      // Calcular estadísticas
-      final estadisticas =
-          _estadisticasService.calcularEstadisticasSolicitudes(solicitudes);
-      final equiposSolicitados =
-          await _estadisticasService.obtenerEquiposMasSolicitados(solicitudes);
-      final asignaturas =
-          _estadisticasService.obtenerEstadisticasPorAsignatura(solicitudes);
-      final prestamosDia =
-          _estadisticasService.obtenerPrestamosPorDia(solicitudes);
-      final equiposPrestados =
-          await _estadisticasService.contarEquiposPrestados();
-      final equiposDevueltos = await _estadisticasService.contarEquiposDevueltos(
+      final resultado = await _estadisticasService.obtenerEstadisticasPorRango(
         _fechaInicio,
         _fechaFin,
       );
 
       setState(() {
-        _estadisticasSolicitudes = estadisticas;
-        _equiposMasSolicitados = equiposSolicitados;
-        _asignaturas = asignaturas;
-        _prestamosPorDia = prestamosDia;
-        _equiposPrestados = equiposPrestados;
-        _equiposDevueltos = equiposDevueltos;
+        _solicitadas = resultado['solicitadas'] as int;
+        _aceptadas = resultado['aceptadas'] as int;
+        _rechazadas = resultado['rechazadas'] as int;
+        _devueltos = resultado['devueltos'] as int;
+        _equiposMasSolicitados =
+            Map<String, int>.from(resultado['top5Equipos'] as Map);
+        _asignaturas =
+            Map<String, int>.from(resultado['asignaturas'] as Map);
+        _prestamosPorDia =
+            Map<String, int>.from(resultado['prestamosPorDia'] as Map);
         _cargando = false;
       });
     } catch (e) {
@@ -86,7 +73,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _cambiarFiltro(String filtro) {
     setState(() {
       _filtroSeleccionado = filtro;
-      
       switch (filtro) {
         case '1':
           _fechaInicio = DateTime.now().subtract(const Duration(days: 1));
@@ -102,7 +88,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           break;
       }
     });
-    
     if (filtro != 'custom') {
       _cargarDatos();
     }
@@ -226,7 +211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _buildFiltrosTemporales(isMobile),
                       const SizedBox(height: 24),
 
-                      // Tarjetas de estadísticas
+                      // Tarjetas de estadísticas (sin "En Uso")
                       _buildTarjetasEstadisticas(isMobile, isTablet),
                       const SizedBox(height: 24),
 
@@ -337,9 +322,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Widget> _buildBotonesFiltro() {
     return [
-      _buildBotonFiltro('1 día', '1'),
-      _buildBotonFiltro('7 días', '7'),
-      _buildBotonFiltro('30 días', '30'),
+      _buildBotonFiltro('Hoy', '1'),
+      _buildBotonFiltro('Últimos 7 días', '7'),
+      _buildBotonFiltro('Últimos 30 días', '30'),
       _buildBotonFiltro('Rango', 'custom'),
     ];
   }
@@ -355,11 +340,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: seleccionado ? Colors.orange.shade700 : Colors.white,
-        foregroundColor: seleccionado ? Colors.white : Colors.grey.shade700,
+        backgroundColor:
+            seleccionado ? Colors.orange.shade700 : Colors.white,
+        foregroundColor:
+            seleccionado ? Colors.white : Colors.grey.shade700,
         elevation: seleccionado ? 4 : 1,
         side: BorderSide(
-          color: seleccionado ? Colors.orange.shade700 : Colors.grey.shade300,
+          color: seleccionado
+              ? Colors.orange.shade700
+              : Colors.grey.shade300,
         ),
       ),
       child: Text(label),
@@ -367,8 +356,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTarjetasEstadisticas(bool isMobile, bool isTablet) {
-    final crossAxisCount = isMobile ? 2 : (isTablet ? 3 : 6);
-    
+    final crossAxisCount = isMobile ? 2 : (isTablet ? 2 : 4);
+
     return GridView.count(
       crossAxisCount: crossAxisCount,
       shrinkWrap: true,
@@ -379,37 +368,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         _buildTarjetaEstadistica(
           'Solicitadas',
-          _estadisticasSolicitudes['total']?.toString() ?? '0',
+          _solicitadas.toString(),
           Icons.mail_outline,
           Colors.blue,
         ),
         _buildTarjetaEstadistica(
           'Aceptadas',
-          _estadisticasSolicitudes['aceptadas']?.toString() ?? '0',
+          _aceptadas.toString(),
           Icons.check_circle_outline,
           Colors.green,
         ),
         _buildTarjetaEstadistica(
           'Rechazadas',
-          _estadisticasSolicitudes['rechazadas']?.toString() ?? '0',
+          _rechazadas.toString(),
           Icons.cancel_outlined,
           Colors.red,
         ),
         _buildTarjetaEstadistica(
-          'Pendientes',
-          _estadisticasSolicitudes['pendientes']?.toString() ?? '0',
-          Icons.hourglass_empty,
-          Colors.orange,
-        ),
-        _buildTarjetaEstadistica(
-          'En Uso',
-          _equiposPrestados.toString(),
-          Icons.devices,
-          Colors.purple,
-        ),
-        _buildTarjetaEstadistica(
           'Devueltos',
-          _equiposDevueltos.toString(),
+          _devueltos.toString(),
           Icons.assignment_turned_in,
           Colors.teal,
         ),
@@ -460,13 +437,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildGraficoLineas(bool isMobile) {
     if (_prestamosPorDia.isEmpty) {
-      return _buildGraficoVacio('Préstamos por Día', isMobile);
+      return _buildGraficoVacio('Préstamos por Período', isMobile);
     }
 
     final entries = _prestamosPorDia.entries.toList();
     final maxY = entries.isEmpty
         ? 10.0
-        : entries.map((e) => e.value).reduce((a, b) => a > b ? a : b).toDouble();
+        : entries
+            .map((e) => e.value)
+            .reduce((a, b) => a > b ? a : b)
+            .toDouble();
+
+    // Muestra hasta 10 etiquetas en el eje X para no saturar
+    final totalEntries = entries.length;
+    final labelStep = (totalEntries / 10).ceil().clamp(1, totalEntries);
 
     return Card(
       elevation: 3,
@@ -476,7 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '📈 Préstamos por Día',
+              '📈 Préstamos por Período',
               style: TextStyle(
                 fontSize: isMobile ? 16 : 18,
                 fontWeight: FontWeight.bold,
@@ -490,36 +474,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.shade200,
-                        strokeWidth: 1,
-                      );
-                    },
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: Colors.grey.shade200,
+                      strokeWidth: 1,
+                    ),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: TextStyle(
-                              fontSize: isMobile ? 10 : 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          );
-                        },
+                        interval: 1,
+                        getTitlesWidget: (value, meta) => Text(
+                          value.toInt().toString(),
+                          style: TextStyle(
+                            fontSize: isMobile ? 10 : 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
                       ),
                     ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 30,
+                        interval: 1,
                         getTitlesWidget: (value, meta) {
                           final index = value.toInt();
-                          if (index >= 0 && index < entries.length) {
+                          if (index >= 0 &&
+                              index < entries.length &&
+                              index % labelStep == 0) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
@@ -578,13 +562,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildGraficoBarras(bool isMobile) {
     if (_equiposMasSolicitados.isEmpty) {
-      return _buildGraficoVacio('Equipos Más Solicitados', isMobile);
+      return _buildGraficoVacio('Top 5 Equipos Más Solicitados', isMobile);
     }
 
     final entries = _equiposMasSolicitados.entries.take(5).toList();
     final maxY = entries.isEmpty
         ? 10.0
-        : entries.map((e) => e.value).reduce((a, b) => a > b ? a : b).toDouble();
+        : entries
+            .map((e) => e.value)
+            .reduce((a, b) => a > b ? a : b)
+            .toDouble();
 
     return Card(
       elevation: 3,
@@ -609,33 +596,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.shade200,
-                        strokeWidth: 1,
-                      );
-                    },
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: Colors.grey.shade200,
+                      strokeWidth: 1,
+                    ),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: TextStyle(
-                              fontSize: isMobile ? 10 : 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          );
-                        },
+                        interval: 1,
+                        getTitlesWidget: (value, meta) => Text(
+                          value.toInt().toString(),
+                          style: TextStyle(
+                            fontSize: isMobile ? 10 : 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
                       ),
                     ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 60,
+                        interval: 1,
                         getTitlesWidget: (value, meta) {
                           final index = value.toInt();
                           if (index >= 0 && index < entries.length) {
@@ -744,7 +729,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             .map((entry) {
                           final index = entry.key;
                           final asignatura = entry.value;
-                          final porcentaje = (asignatura.value / total) * 100;
+                          final porcentaje =
+                              (asignatura.value / total) * 100;
                           return PieChartSectionData(
                             color: colores[index % colores.length],
                             value: asignatura.value.toDouble(),

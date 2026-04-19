@@ -50,3 +50,6 @@ firebase-debug.*.log
 
 # Carpeta de investigación / tesis (uso local)
 tesis/
+
+# Carpeta de generación de manual (uso local)
+generar_manual/

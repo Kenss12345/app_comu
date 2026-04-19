@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart'; // si usas Google Sign-In
 import '../main.dart';
 import '../utils/responsive_breakpoints.dart';
+import '../services/estadisticas_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -2212,6 +2213,13 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
 
     // Borra el documento completo de usuarios_con_equipos tras devolver todo
     await docRef.delete();
+
+    // Registra la devolución en los contadores del dashboard
+    await EstadisticasService().incrementarEstadisticasDia(
+      accion: 'devuelta',
+      cantidad: editedEquipos.length,
+    );
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Devolución completada.')));
     }
@@ -2345,9 +2353,23 @@ class _UsuariosConEquiposScreenState extends State<UsuariosConEquiposScreen> {
         }
       }
 
+      // Registra la acción en los contadores del dashboard
+      final dataSolicitud = solicitud.data() as Map<String, dynamic>;
+      if (accion == 'Aceptada') {
+        await EstadisticasService().incrementarEstadisticasDia(
+          accion: 'aceptada',
+          equipos: dataSolicitud['equipos'] as List<dynamic>?,
+          asignatura: dataSolicitud['asignatura'] as String?,
+        );
+      } else if (accion == 'Rechazada') {
+        await EstadisticasService().incrementarEstadisticasDia(
+          accion: 'rechazada',
+        );
+      }
+
       await solicitud.reference.delete();
 
-      final data = solicitud.data() as Map<String, dynamic>;
+      final data = dataSolicitud;
       final emailUsuario = data['email'] ?? "";
       await _enviarCorreoNotificacion(emailUsuario, accion, data);
 

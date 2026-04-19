@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:app_comu/utils/carrito_equipos.dart';
 import 'package:intl/intl.dart';
 import 'package:app_comu/utils/temporizador_reserva.dart';
+import '../services/estadisticas_service.dart';
 
 List<Map<String, dynamic>> equiposSeleccionados = CarritoEquipos().equipos;
 
@@ -336,6 +337,11 @@ class _SolicitudEquiposScreenState extends State<SolicitudEquiposScreen> {
           'equipos': equipos,
           'dias_prestamo': diasPrestamo,
         });
+
+        // Registra la solicitud en el contador diario del dashboard
+        await EstadisticasService().incrementarEstadisticasDia(
+          accion: 'solicitada',
+        );
 
         for (final equipo in equipos) {
           await FirebaseFirestore.instance
